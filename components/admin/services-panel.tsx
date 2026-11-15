@@ -34,12 +34,20 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
+    if (!draft.name.trim()) {
+      toast.error("Ingresá el nombre del servicio")
+      return
+    }
+    if (draft.price === "" || isNaN(Number(draft.price))) {
+      toast.error("Ingresá un precio válido")
+      return
+    }
     setSaving(true)
     const body = JSON.stringify({
       name: draft.name.trim(),
-      category: draft.category.trim() || null,
+      category: draft.category.trim(),
       price: Number(draft.price),
-      duration_minutes: Number(draft.duration_minutes),
+      duration_minutes: Number(draft.duration_minutes) || 30,
     })
     try {
       if (editingId === "new") await apiRequest("/api/services", { method: "POST", body })
@@ -68,18 +76,18 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
   }
 
   const form = (
-    <form onSubmit={save} className="grid grid-cols-2 gap-3 rounded-xl bg-neutral-50 p-4">
+    <form onSubmit={save} noValidate className="grid grid-cols-2 gap-3 rounded-xl bg-neutral-50 p-4">
       <Field label="Nombre" htmlFor="svc-name" required className="col-span-2">
-        <Input id="svc-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} required />
+        <Input id="svc-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
       </Field>
       <Field label="Categoría" htmlFor="svc-cat" className="col-span-2">
         <Input id="svc-cat" value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} placeholder="Corte, Barba, Color…" />
       </Field>
       <Field label="Precio" htmlFor="svc-price" required>
-        <Input id="svc-price" type="number" min={0} inputMode="numeric" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} required />
+        <Input id="svc-price" type="number" min={0} inputMode="numeric" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
       </Field>
       <Field label="Duración (min)" htmlFor="svc-dur" required>
-        <Input id="svc-dur" type="number" min={5} step={5} inputMode="numeric" value={draft.duration_minutes} onChange={(e) => setDraft({ ...draft, duration_minutes: e.target.value })} required />
+        <Input id="svc-dur" type="number" min={5} step={5} inputMode="numeric" value={draft.duration_minutes} onChange={(e) => setDraft({ ...draft, duration_minutes: e.target.value })} />
       </Field>
       <div className="col-span-2 flex justify-end gap-2">
         <Btn type="button" variant="ghost" onClick={() => setEditingId(null)}>

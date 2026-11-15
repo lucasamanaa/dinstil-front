@@ -29,11 +29,19 @@ export function BarbersPanel({ onChanged }: { onChanged?: () => void }) {
 
   async function create(e: React.FormEvent) {
     e.preventDefault()
+    if (!name.trim()) {
+      toast.error("Ingresá el nombre del barbero")
+      return
+    }
     setSaving(true)
     try {
       await apiRequest("/api/barbers", {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), photo_url: photo.trim() || null, service_ids: serviceIds }),
+        body: JSON.stringify({
+          name: name.trim(),
+          photo_url: photo.trim() || null,
+          service_ids: serviceIds,
+        }),
       })
       toast.success("Barbero agregado")
       setCreating(false)
@@ -63,12 +71,12 @@ export function BarbersPanel({ onChanged }: { onChanged?: () => void }) {
       }
     >
       {creating ? (
-        <form onSubmit={create} className="mb-4 flex flex-col gap-3 rounded-xl bg-neutral-50 p-4">
+        <form onSubmit={create} noValidate className="mb-4 flex flex-col gap-3 rounded-xl bg-neutral-50 p-4">
           <Field label="Nombre" htmlFor="barber-name" required>
-            <Input id="barber-name" value={name} onChange={(e) => setName(e.target.value)} required />
+            <Input id="barber-name" value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
           <Field label="URL de foto" htmlFor="barber-photo">
-            <Input id="barber-photo" type="url" value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://…" />
+            <Input id="barber-photo" type="text" value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://…" />
           </Field>
           <fieldset>
             <legend className="mb-2 text-[13px] font-medium text-ink">Servicios que realiza</legend>

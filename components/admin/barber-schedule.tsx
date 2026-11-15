@@ -1,21 +1,67 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
 import { Loader2, Trash2 } from "lucide-react"
-import { apiRequest, asList, fetcher, type BarberException } from "@/lib/api"
+import { ApiError, apiRequest, asList, fetcher, type BarberException, type ScheduleRow } from "@/lib/api"
 import { formatShortDate, normalizeTime, todayISO, WEEKDAYS_MON_FIRST } from "@/lib/dates"
 import { Btn, Field, Input } from "@/components/ds/primitives"
 import { Toggle, errorMessage } from "./admin-ui"
 
-type DayRow = { active: boolean; start: string; end: string }
+type DayRow = {
+  active: boolean
+  split: boolean
+  morningStart: string
+  morningEnd: string
+  afternoonStart: string
+  afternoonEnd: string
+}
 
-const DEFAULT_DAYS: DayRow[] = WEEKDAYS_MON_FIRST.map((_, i) => ({ active: i < 6, start: "10:00", end: "20:00" }))
+const DEFAULT_DAYS: DayRow[] = WEEKDAYS_MON_FIRST.map((_, i) => ({
+  active: i < 6,
+  split: true,
+  morningStart: "09:00",
+  morningEnd: "13:00",
+  afternoonStart: "16:00",
+  afternoonEnd: "22:00",
+}))
+
+async function scheduleFetcher(path: string) {
+  try {
+    return await fetcher<{ schedules?: ScheduleRow[] } | ScheduleRow[]>(path)
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null
+    return null
+  }
+}
 
 export function BarberSchedule({ barberId }: { barberId: number }) {
   const [days, setDays] = useState<DayRow[]>(DEFAULT_DAYS)
   const [savingSchedule, setSavingSchedule] = useState(false)
+
+  const { data: scheduleData } = useSWR(`/api/barbers/${barberId}/schedule`, scheduleFetcher)
+
+  useEffect(() => {
+    const rows = asList<ScheduleRow>(scheduleData, "schedules")
+    if (rows.length > 0) {
+      setDays(
+        WEEKDAYS_MON_FIRST.map((_, i) => {
+          const found = rows.find((r) => r.day_of_week === i)
+          if (!found) return DEFAULT_DAYS[i]
+          const hasSplit = Boolean(found.split_shift ?? (found.break_start && found.break_end))
+          return {
+            active: Boolean(found.is_active),
+            split: hasSplit,
+            morningStart: (found.morning_start ?? found.start_time ?? "09:00").slice(0, 5),
+            morningEnd: (found.morning_end ?? found.break_start ?? "13:00").slice(0, 5),
+            afternoonStart: (found.afternoon_start ?? found.break_end ?? "16:00").slice(0, 5),
+            afternoonEnd: (found.afternoon_end ?? found.end_time ?? "22:00").slice(0, 5),
+          }
+        }),
+      )
+    }
+  }, [scheduleData])
 
   const exKey = `/api/barbers/${barberId}/exceptions`
   const { data, mutate } = useSWR(exKey, fetcher)
@@ -24,7 +70,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
   const [exDate, setExDate] = useState(todayISO)
   const [fullDay, setFullDay] = useState(true)
   const [blockedStart, setBlockedStart] = useState("13:00")
-  const [blockedEnd, setBlockedEnd] = useState("15:00")
+  const [blockedEnd, setBlockedEnd] = useState("16:00")
   const [reason, setReason] = useState("")
   const [savingEx, setSavingEx] = useState(false)
 
@@ -34,16 +80,25 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
 
   async function saveSchedule() {
     setSavingSchedule(true)
+    const payload = days.map((d, i) => ({
+      day_of_week: i,
+      is_active: d.active,
+      start_time: d.morningStart,
+      end_time: d.split ? d.afternoonEnd : d.morningEnd,
+      break_start: d.split ? d.morningEnd : null,
+      break_end: d.split ? d.afternoonStart : null,
+      split_shift: d.split,
+      morning_start: d.morningStart,
+      morning_end: d.morningEnd,
+      afternoon_start: d.afternoonStart,
+      afternoon_end: d.afternoonEnd,
+    }))
     try {
       await apiRequest(`/api/barbers/${barberId}/schedule`, {
         method: "POST",
-        body: JSON.stringify({
-          schedules: days
-            .map((d, i) => ({ day_of_week: i, start_time: d.start, end_time: d.end, is_active: d.active }))
-            .filter((d) => d.is_active),
-        }),
+        body: JSON.stringify(payload),
       })
-      toast.success("Horarios guardados")
+      toast.success("Horarios del barbero guardados")
     } catch (err) {
       toast.error(errorMessage(err))
     } finally {
@@ -53,11 +108,16 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
 
   async function addException(e: React.FormEvent) {
     e.preventDefault()
+    if (!exDate) {
+      toast.error("Seleccioná una fecha para el bloqueo")
+      return
+    }
     setSavingEx(true)
     try {
       await apiRequest(exKey, {
         method: "POST",
         body: JSON.stringify({
+          date: exDate,
           target_date: exDate,
           is_full_day_off: fullDay,
           blocked_start: fullDay ? null : blockedStart,
@@ -88,21 +148,76 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
     <div className="flex flex-col gap-6">
       <div>
         <h3 className="mb-3 text-[13px] font-semibold uppercase tracking-wider text-neutral-500">Horario semanal</h3>
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-3">
           {WEEKDAYS_MON_FIRST.map((label, i) => (
-            <li key={label} className="flex flex-wrap items-center gap-2">
-              <label className="flex w-28 items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={days[i].active}
-                  onChange={(e) => updateDay(i, { active: e.target.checked })}
-                  className="size-4 accent-[var(--color-brand)]"
-                />
-                {label}
-              </label>
-              <Input type="time" value={days[i].start} onChange={(e) => updateDay(i, { start: e.target.value })} disabled={!days[i].active} className="h-9 w-28 px-2 text-sm" aria-label={`${label} desde`} />
-              <span className="text-neutral-400">–</span>
-              <Input type="time" value={days[i].end} onChange={(e) => updateDay(i, { end: e.target.value })} disabled={!days[i].active} className="h-9 w-28 px-2 text-sm" aria-label={`${label} hasta`} />
+            <li key={label} className="flex flex-col gap-2 rounded-xl border border-border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                  <input
+                    type="checkbox"
+                    checked={days[i].active}
+                    onChange={(e) => updateDay(i, { active: e.target.checked })}
+                    className="size-4 accent-[var(--color-brand)]"
+                  />
+                  {label}
+                </label>
+                {days[i].active ? (
+                  <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                    <input
+                      type="checkbox"
+                      checked={days[i].split}
+                      onChange={(e) => updateDay(i, { split: e.target.checked })}
+                      className="size-3.5 accent-[var(--color-copper)]"
+                    />
+                    2 turnos (cortado)
+                  </label>
+                ) : (
+                  <span className="text-xs text-neutral-400">Cerrado / Franco</span>
+                )}
+              </div>
+
+              {days[i].active ? (
+                <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-14 text-xs text-neutral-500">{days[i].split ? "Mañana" : "Horario"}</span>
+                    <Input
+                      type="time"
+                      value={days[i].morningStart}
+                      onChange={(e) => updateDay(i, { morningStart: e.target.value })}
+                      className="h-9 w-26 px-2 text-sm"
+                      aria-label={`${label} mañana desde`}
+                    />
+                    <span className="text-neutral-400">a</span>
+                    <Input
+                      type="time"
+                      value={days[i].morningEnd}
+                      onChange={(e) => updateDay(i, { morningEnd: e.target.value })}
+                      className="h-9 w-26 px-2 text-sm"
+                      aria-label={`${label} mañana hasta`}
+                    />
+                  </div>
+                  {days[i].split ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-14 text-xs text-neutral-500 sm:w-auto sm:pl-2">Tarde</span>
+                      <Input
+                        type="time"
+                        value={days[i].afternoonStart}
+                        onChange={(e) => updateDay(i, { afternoonStart: e.target.value })}
+                        className="h-9 w-26 px-2 text-sm"
+                        aria-label={`${label} tarde desde`}
+                      />
+                      <span className="text-neutral-400">a</span>
+                      <Input
+                        type="time"
+                        value={days[i].afternoonEnd}
+                        onChange={(e) => updateDay(i, { afternoonEnd: e.target.value })}
+                        className="h-9 w-26 px-2 text-sm"
+                        aria-label={`${label} tarde hasta`}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -114,15 +229,15 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
 
       <div>
         <h3 className="mb-3 text-[13px] font-semibold uppercase tracking-wider text-neutral-500">Bloqueos</h3>
-        <form onSubmit={addException} className="flex flex-col gap-3 rounded-xl bg-neutral-50 p-4">
+        <form onSubmit={addException} noValidate className="flex flex-col gap-3 rounded-xl bg-neutral-50 p-4">
           <Field label="Fecha" htmlFor={`ex-date-${barberId}`} required>
-            <Input id={`ex-date-${barberId}`} type="date" value={exDate} onChange={(e) => setExDate(e.target.value)} className="h-10" required />
+            <Input id={`ex-date-${barberId}`} type="date" value={exDate} onChange={(e) => setExDate(e.target.value)} className="h-10" />
           </Field>
           <Toggle checked={fullDay} onChange={setFullDay} label="Día completo libre" />
           {!fullDay ? (
             <div className="flex items-center gap-2">
               <Input type="time" value={blockedStart} onChange={(e) => setBlockedStart(e.target.value)} className="h-10" aria-label="Bloqueo desde" />
-              <span className="text-neutral-400">–</span>
+              <span className="text-neutral-400">a</span>
               <Input type="time" value={blockedEnd} onChange={(e) => setBlockedEnd(e.target.value)} className="h-10" aria-label="Bloqueo hasta" />
             </div>
           ) : null}

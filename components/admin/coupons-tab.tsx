@@ -31,13 +31,23 @@ export function CouponsTab() {
 
   async function create(e: React.FormEvent) {
     e.preventDefault()
+    if (!code.trim()) {
+      toast.error("Ingresá un código para el cupón")
+      return
+    }
+    const pct = Number(percent)
+    if (!pct || pct <= 0 || pct > 100) {
+      toast.error("Ingresá un porcentaje de descuento entre 1 y 100")
+      return
+    }
     setSaving(true)
     try {
       await apiRequest("/api/coupons", {
         method: "POST",
         body: JSON.stringify({
           code: code.trim().toUpperCase(),
-          discount_percent: Number(percent),
+          discount_percent: pct,
+          discount_percentage: pct,
           valid_days: days.length ? [...days].sort().join(",") : null,
           valid_start_time: start || null,
           valid_end_time: end || null,
@@ -69,13 +79,13 @@ export function CouponsTab() {
   return (
     <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <Panel title="Nuevo cupón" description="Descuentos por día y franja horaria">
-        <form onSubmit={create} className="flex flex-col gap-4">
+        <form onSubmit={create} noValidate className="flex flex-col gap-4">
           <div className="grid grid-cols-[1fr_110px] gap-3">
             <Field label="Código" htmlFor="cp-code" required>
-              <Input id="cp-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="uppercase tracking-wider" placeholder="DOMINGO20" required />
+              <Input id="cp-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="uppercase tracking-wider" placeholder="DOMINGO20" />
             </Field>
             <Field label="% desc." htmlFor="cp-pct" required>
-              <Input id="cp-pct" type="number" min={1} max={100} value={percent} onChange={(e) => setPercent(e.target.value)} required />
+              <Input id="cp-pct" type="number" min={1} max={100} value={percent} onChange={(e) => setPercent(e.target.value)} />
             </Field>
           </div>
           <fieldset>
@@ -100,7 +110,7 @@ export function CouponsTab() {
               <Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} aria-label="Hasta" />
             </div>
           </Field>
-          <Btn type="submit" disabled={saving || !code.trim()}>
+          <Btn type="submit" disabled={saving}>
             {saving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
             Crear cupón
           </Btn>
@@ -114,18 +124,21 @@ export function CouponsTab() {
           <EmptyBlock icon={<Ticket className="size-6" />} title="Sin cupones" text="Creá promos para llenar horarios flojos." />
         ) : (
           <ul className="divide-y divide-border">
-            {coupons.map((c) => (
-              <li key={c.id} className="flex items-center gap-3 py-3">
-                <span className="rounded-lg border border-dashed border-copper px-2.5 py-1 font-mono text-sm font-semibold tracking-wider text-copper">{c.code}</span>
-                <div className="min-w-0 flex-1 text-[13px] text-neutral-500">
-                  <span className="font-semibold text-ink">-{c.discount_percent}%</span> · {daysLabel(c.valid_days)}
-                  {c.valid_start_time && c.valid_end_time ? ` · ${normalizeTime(c.valid_start_time)}–${normalizeTime(c.valid_end_time)}` : ""}
-                </div>
-                <Btn variant="ghost" size="sm" className="size-9 p-0 text-destructive" onClick={() => remove(c)} aria-label={`Eliminar ${c.code}`}>
-                  <Trash2 className="size-4" />
-                </Btn>
-              </li>
-            ))}
+            {coupons.map((c) => {
+              const pct = c.discount_percent ?? c.discount_percentage ?? 0
+              return (
+                <li key={c.id} className="flex items-center gap-3 py-3">
+                  <span className="rounded-lg border border-dashed border-copper px-2.5 py-1 font-mono text-sm font-semibold tracking-wider text-copper">{c.code}</span>
+                  <div className="min-w-0 flex-1 text-[13px] text-neutral-500">
+                    <span className="font-semibold text-ink">-{pct}%</span> · {daysLabel(c.valid_days)}
+                    {c.valid_start_time && c.valid_end_time ? ` · ${normalizeTime(c.valid_start_time)}–${normalizeTime(c.valid_end_time)}` : ""}
+                  </div>
+                  <Btn variant="ghost" size="sm" className="size-9 p-0 text-destructive" onClick={() => remove(c)} aria-label={`Eliminar ${c.code}`}>
+                    <Trash2 className="size-4" />
+                  </Btn>
+                </li>
+              )
+            })}
           </ul>
         )}
       </Panel>

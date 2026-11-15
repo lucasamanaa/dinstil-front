@@ -1,19 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import useSWR from "swr"
-import { Toaster } from "sonner"
-import { CalendarDays, Settings, Sparkles, Ticket, Users, UsersRound } from "lucide-react"
-import { ApiError, asList, fetcher, type Barber, type Service, type Shop } from "@/lib/api"
+import { Toaster, toast } from "sonner"
+import { CalendarDays, Lock, LogOut, Loader2, Settings, Sparkles, Ticket, Users, UsersRound } from "lucide-react"
+import { ApiError, apiRequest, asList, fetcher, type Barber, type Service, type Shop } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { BrandLogo } from "@/components/brand-logo"
-import { Skeleton } from "@/components/ds/primitives"
+import { Btn, Field, Input, Skeleton } from "@/components/ds/primitives"
 import { AgendaTab } from "./agenda-tab"
 import { BarbersPanel } from "./barbers-panel"
 import { ClientsTab } from "./clients-tab"
 import { CouponsTab } from "./coupons-tab"
 import { ServicesPanel } from "./services-panel"
 import { SettingsTab } from "./settings-tab"
+
+const AUTH_STORAGE_KEY = "dinstill_admin_auth"
 
 type TabId = "agenda" | "equipo" | "cupones" | "clientes" | "ajustes"
 
@@ -35,10 +37,96 @@ async function shopFetcher(path: string) {
 }
 
 export function AdminDashboard() {
-  const shop = useSWR("/api/setup/shop", shopFetcher)
-  const services = useSWR("/api/services", fetcher)
-  const barbers = useSWR("/api/barbers", fetcher)
+  const [authorized, setAuthorized] = useState<boolean | null>(null)
+  const [pin, setPin] = useState("")
+  const [checkingPin, setCheckingPin] = useState(false)
+
+  useEffect(() => {
+    const saved = window.sessionStorage.getItem(AUTH_STORAGE_KEY) === "true"
+    setAuthorized(saved)
+  }, [])
+
+  const shop = useSWR(authorized ? "/api/setup/shop" : null, shopFetcher)
+  const services = useSWR(authorized ? "/api/services" : null, fetcher)
+  const barbers = useSWR(authorized ? "/api/barbers" : null, fetcher)
   const [chosenTab, setChosenTab] = useState<TabId | null>(null)
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    const cleanPin = pin.trim()
+    if (!cleanPin) {
+      toast.error("Ingresá el PIN de administrador")
+      return
+    }
+    setCheckingPin(true)
+    try {
+      await apiRequest("/api/admin/login", {
+        method: "POST",
+        body: JSON.stringify({ pin: cleanPin }),
+      })
+      window.sessionStorage.setItem(AUTH_STORAGE_KEY, "true")
+      setAuthorized(true)
+      setPin("")
+    } catch (err) {
+      const fallbackPin = process.env.NEXT_PUBLIC_ADMIN_PIN || "1234"
+      if (err instanceof ApiError && err.status === 404 && cleanPin === fallbackPin) {
+        window.sessionStorage.setItem(AUTH_STORAGE_KEY, "true")
+        setAuthorized(true)
+        setPin("")
+      } else {
+        toast.error("Clave de acceso incorrecta")
+      }
+    } finally {
+      setCheckingPin(false)
+    }
+  }
+
+  function handleLogout() {
+    window.sessionStorage.removeItem(AUTH_STORAGE_KEY)
+    setAuthorized(false)
+    setPin("")
+  }
+
+  if (authorized === null) {
+    return <div className="min-h-dvh bg-neutral-50" />
+  }
+
+  if (!authorized) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-neutral-50 px-4">
+        <Toaster position="top-center" richColors />
+        <form
+          onSubmit={handleLogin}
+          noValidate
+          className="flex w-full max-w-sm flex-col gap-5 rounded-2xl border border-border bg-white p-6 shadow-xs"
+        >
+          <div className="flex flex-col items-center gap-2 text-center">
+            <BrandLogo />
+            <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+              <Lock className="size-3" aria-hidden="true" />
+              Acceso Admin
+            </span>
+          </div>
+          <Field label="PIN de administrador" htmlFor="admin-pin" required>
+            <Input
+              id="admin-pin"
+              type="password"
+              inputMode="numeric"
+              autoFocus
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder="••••"
+              className="text-center text-lg tracking-[0.3em]"
+            />
+          </Field>
+          <Btn type="submit" size="lg" className="w-full" disabled={checkingPin}>
+            {checkingPin ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+            Ingresar
+          </Btn>
+        </form>
+      </div>
+    )
+  }
 
   const loading = shop.isLoading || services.isLoading || barbers.isLoading
   const needsShop = !shop.data?.name
@@ -53,6 +141,14 @@ export function AdminDashboard() {
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <BrandLogo name={shop.data?.name} />
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Panel</span>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-ink"
+          >
+            <LogOut className="size-3.5" aria-hidden="true" />
+            Salir
+          </button>
         </div>
         <nav className="no-scrollbar mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2 sm:px-4" aria-label="Secciones">
           {TABS.map(({ id, label, icon: Icon }) => (

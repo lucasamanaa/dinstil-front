@@ -1,4 +1,19 @@
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "")
+const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").trim().replace(/\/$/, "")
+export const API_URL = rawApiUrl.startsWith("http") ? rawApiUrl : `https://${rawApiUrl}`
+
+export type ScheduleRow = {
+  day_of_week: number
+  is_active: boolean
+  start_time: string
+  end_time: string
+  break_start?: string | null
+  break_end?: string | null
+  split_shift?: boolean
+  morning_start?: string
+  morning_end?: string
+  afternoon_start?: string
+  afternoon_end?: string
+}
 
 export type Shop = {
   name?: string | null
@@ -6,9 +21,18 @@ export type Shop = {
   phone?: string | null
   require_deposit?: boolean
   deposit_percent?: number | null
+  deposit_percentage?: number | null
   opening_time?: string | null
   closing_time?: string | null
+  break_start?: string | null
+  break_end?: string | null
+  split_shift?: boolean | null
+  morning_start?: string | null
+  morning_end?: string | null
+  afternoon_start?: string | null
+  afternoon_end?: string | null
   open_days?: string | null
+  schedules?: ScheduleRow[]
 }
 
 export type Service = {
@@ -29,7 +53,8 @@ export type Barber = {
 export type Coupon = {
   id: number
   code: string
-  discount_percent: number
+  discount_percent?: number
+  discount_percentage?: number
   valid_days?: string | null
   valid_start_time?: string | null
   valid_end_time?: string | null
@@ -39,6 +64,7 @@ export type Coupon = {
 export type CouponValidation = {
   valid: boolean
   discount_percent?: number
+  discount_percentage?: number
   message?: string
   detail?: string
 }
@@ -108,12 +134,29 @@ export class ApiError extends Error {
   }
 }
 
+function translateErrorText(msg: string): string {
+  const lower = msg.toLowerCase()
+  if (
+    lower.includes("field required") ||
+    lower.includes("input should be a valid") ||
+    lower.includes("value is not a valid") ||
+    lower.includes("string should have at least") ||
+    lower.includes("missing")
+  ) {
+    return "Faltan completar campos obligatorios o el formato no es válido"
+  }
+  return msg
+}
+
 async function parseError(res: Response) {
   try {
     const body = await res.json()
     const detail = body?.detail ?? body?.message
-    if (typeof detail === "string") return detail
-    if (Array.isArray(detail)) return detail.map((d) => d?.msg ?? String(d)).join(", ")
+    if (typeof detail === "string") return translateErrorText(detail)
+    if (Array.isArray(detail)) {
+      const joined = detail.map((d) => d?.msg ?? String(d)).join(", ")
+      return translateErrorText(joined)
+    }
   } catch {}
   return `Error ${res.status}`
 }

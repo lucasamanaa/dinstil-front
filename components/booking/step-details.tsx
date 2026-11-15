@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { Cake, ChevronDown, Loader2, Pencil, Ticket } from "lucide-react"
 import { apiRequest, formatPrice, type AppointmentCreated, type CouponValidation, type Service } from "@/lib/api"
 import { formatShortDate } from "@/lib/dates"
@@ -84,7 +85,6 @@ export function StepDetails({
   const deposit = Math.round((total * depositPercent) / 100)
 
   const phoneDigits = cleanPhone(phone)
-  const canSubmit = firstName.trim() && lastName.trim() && phoneDigits.length >= 10 && !submitting
 
   async function applyCoupon() {
     const code = couponCode.trim().toUpperCase()
@@ -95,11 +95,12 @@ export function StepDetails({
       const res = await apiRequest<CouponValidation>(
         `/api/coupons/validate?code=${encodeURIComponent(code)}&target_date=${date}&start_time=${time}`,
       )
-      if (res?.valid === false || !res?.discount_percent) {
+      const pct = res?.discount_percent ?? res?.discount_percentage
+      if (res?.valid === false || !pct) {
         setCouponStatus(null)
         setCouponError(res?.message || res?.detail || "Cupón no válido para este turno")
       } else {
-        setCouponStatus({ code, percent: Number(res.discount_percent) })
+        setCouponStatus({ code, percent: Number(pct) })
       }
     } catch (e) {
       setCouponStatus(null)
@@ -111,7 +112,14 @@ export function StepDetails({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!canSubmit) return
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("Completá tu nombre y apellido")
+      return
+    }
+    if (phoneDigits.length < 8) {
+      toast.error("Ingresá un número de teléfono válido")
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
@@ -120,6 +128,7 @@ export function StepDetails({
         body: JSON.stringify({
           service_id: service.id,
           barber_id: barberId,
+          date,
           target_date: date,
           start_time: time,
           first_name: firstName.trim(),
@@ -148,7 +157,7 @@ export function StepDetails({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col pb-28">
+    <form onSubmit={submit} noValidate className="flex flex-col pb-28">
       <StepTitle>Completá tus datos para confirmar</StepTitle>
 
       <div className="rounded-2xl border border-border bg-white p-4">
@@ -182,14 +191,14 @@ export function StepDetails({
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         <Field label="Nombre" htmlFor="first_name" required>
-          <Input id="first_name" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+          <Input id="first_name" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         </Field>
         <Field label="Apellido" htmlFor="last_name" required>
-          <Input id="last_name" autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+          <Input id="last_name" autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
         </Field>
       </div>
 
-      <Field label="Teléfono" htmlFor="phone" required hint="Código de área sin 0 y número sin 15. Ej: 11 2345 6789" className="mt-4">
+      <Field label="Teléfono" htmlFor="phone" required hint="Código de área sin 0 y número sin 15. Ej: 280 455 0000" className="mt-4">
         <div className="flex h-12 items-center rounded-xl border border-input bg-white focus-within:border-ink">
           <span className="border-r border-border px-3 text-[15px] font-medium text-neutral-500">+54</span>
           <input
@@ -200,15 +209,14 @@ export function StepDetails({
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
             onBlur={() => setPhone(phoneDigits)}
-            placeholder="11 2345 6789"
+            placeholder="280 455 0000"
             className="h-full flex-1 bg-transparent px-3 text-[15px] text-ink outline-none placeholder:text-neutral-400"
-            required
           />
         </div>
       </Field>
 
       <Field label="Correo electrónico" htmlFor="email" className="mt-4">
-        <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input id="email" type="text" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </Field>
 
       {editBirthday ? (
@@ -291,7 +299,7 @@ export function StepDetails({
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/95 backdrop-blur">
         <div className="mx-auto max-w-md px-5 pb-[max(env(safe-area-inset-bottom),16px)] pt-3">
-          <Btn type="submit" size="lg" className="w-full" disabled={!canSubmit}>
+          <Btn type="submit" size="lg" className="w-full" disabled={submitting}>
             {submitting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
             {requireDeposit ? `Pagar seña ${depositPercent}% (${formatPrice(deposit)}) y Reservar` : "Confirmar Reserva"}
           </Btn>
