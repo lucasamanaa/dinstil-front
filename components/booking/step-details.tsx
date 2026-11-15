@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Cake, ChevronDown, Loader2, Pencil, Ticket } from "lucide-react"
 import { apiRequest, formatPrice, type AppointmentCreated, type CouponValidation, type Service } from "@/lib/api"
-import { formatShortDate } from "@/lib/dates"
+import { formatShortDate, maskDMYInput, parseDMYToISO } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 import { Btn, Field, Input, Textarea } from "@/components/ds/primitives"
 import { StepTitle } from "./state-views"
@@ -30,7 +30,8 @@ function readProfile(): ClientProfile {
 
 function cleanPhone(value: string) {
   let digits = value.replace(/\D/g, "")
-  if (digits.startsWith("54")) digits = digits.slice(2)
+  if (digits.startsWith("549")) digits = digits.slice(3)
+  else if (digits.startsWith("54")) digits = digits.slice(2)
   if (digits.startsWith("0")) digits = digits.slice(1)
   return digits
 }
@@ -66,7 +67,7 @@ export function StepDetails({
   const [lastName, setLastName] = useState(profile.last_name ?? "")
   const [phone, setPhone] = useState(profile.phone ?? "")
   const [email, setEmail] = useState(profile.email ?? "")
-  const [birthDate, setBirthDate] = useState("")
+  const [birthDateDMY, setBirthDateDMY] = useState("")
   const [editBirthday, setEditBirthday] = useState(!profile.has_birth_date)
   const [notes, setNotes] = useState("")
 
@@ -120,6 +121,16 @@ export function StepDetails({
       toast.error("Ingresá un número de teléfono válido")
       return
     }
+
+    let isoBirth: string | null = null
+    if (editBirthday && birthDateDMY.trim()) {
+      isoBirth = parseDMYToISO(birthDateDMY)
+      if (!isoBirth) {
+        toast.error("Ingresá tu cumpleaños en formato DD/MM/AAAA (ej: 23/03/1998)")
+        return
+      }
+    }
+
     setSubmitting(true)
     setError(null)
     try {
@@ -135,7 +146,7 @@ export function StepDetails({
           last_name: lastName.trim(),
           phone: `+54${phoneDigits}`,
           email: email.trim() || null,
-          birth_date: editBirthday && birthDate ? birthDate : null,
+          birth_date: isoBirth,
           notes: notes.trim() || null,
           coupon_code: couponStatus?.code ?? null,
         }),
@@ -145,9 +156,15 @@ export function StepDetails({
         last_name: lastName.trim(),
         phone: phoneDigits,
         email: email.trim(),
-        has_birth_date: profile.has_birth_date || Boolean(birthDate),
+        has_birth_date: profile.has_birth_date || Boolean(isoBirth),
       }
       window.localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile))
+
+      if (requireDeposit && response?.mercadopago_url) {
+        window.location.href = response.mercadopago_url
+        return
+      }
+
       onConfirmed({ response, total: Number(response?.total ?? response?.total_price ?? total) })
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo confirmar la reserva")
@@ -220,8 +237,15 @@ export function StepDetails({
       </Field>
 
       {editBirthday ? (
-        <Field label="Fecha de cumpleaños" htmlFor="birth_date" hint="Para darte un descuento en tu día" className="mt-4">
-          <Input id="birth_date" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+        <Field label="Fecha de cumpleaños" htmlFor="birth_date" hint="Formato Día/Mes/Año (ej: 23/03/1998) para darte un descuento en tu día" className="mt-4">
+          <Input
+            id="birth_date"
+            type="text"
+            inputMode="numeric"
+            placeholder="DD/MM/AAAA"
+            value={birthDateDMY}
+            onChange={(e) => setBirthDateDMY(maskDMYInput(e.target.value))}
+          />
         </Field>
       ) : (
         <div className="mt-4 flex items-center justify-between rounded-xl bg-neutral-50 px-4 py-3">

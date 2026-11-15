@@ -24,9 +24,9 @@ function extractSlots(data: unknown): string[] {
 }
 
 const GROUPS = [
-  { label: "Mañana", test: (t: string) => t < "13:00" },
-  { label: "Tarde", test: (t: string) => t >= "13:00" && t < "19:00" },
-  { label: "Noche", test: (t: string) => t >= "19:00" },
+  { label: "Mañana", test: (t: string) => t < "14:30" },
+  { label: "Tarde", test: (t: string) => t >= "14:30" && t < "19:30" },
+  { label: "Noche", test: (t: string) => t >= "19:30" },
 ]
 
 export function StepDateTime({

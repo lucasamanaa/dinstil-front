@@ -5,8 +5,8 @@ import useSWR from "swr"
 import { toast } from "sonner"
 import { Loader2, Trash2 } from "lucide-react"
 import { ApiError, apiRequest, asList, fetcher, type BarberException, type ScheduleRow } from "@/lib/api"
-import { formatShortDate, normalizeTime, todayISO, WEEKDAYS_MON_FIRST } from "@/lib/dates"
-import { Btn, Field, Input } from "@/components/ds/primitives"
+import { formatDMY, maskDMYInput, normalizeTime, parseDMYToISO, TIME_OPTIONS_24H, todayISO, WEEKDAYS_MON_FIRST } from "@/lib/dates"
+import { Btn, Field, Input, Select } from "@/components/ds/primitives"
 import { Toggle, errorMessage } from "./admin-ui"
 
 type DayRow = {
@@ -22,8 +22,8 @@ const DEFAULT_DAYS: DayRow[] = WEEKDAYS_MON_FIRST.map((_, i) => ({
   active: i < 6,
   split: true,
   morningStart: "09:00",
-  morningEnd: "13:00",
-  afternoonStart: "16:00",
+  morningEnd: "14:00",
+  afternoonStart: "17:00",
   afternoonEnd: "22:00",
 }))
 
@@ -40,7 +40,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
   const [days, setDays] = useState<DayRow[]>(DEFAULT_DAYS)
   const [savingSchedule, setSavingSchedule] = useState(false)
 
-  const { data: scheduleData } = useSWR(`/api/barbers/${barberId}/schedule`, scheduleFetcher)
+  const { data: scheduleData, mutate: mutateSchedule } = useSWR(`/api/barbers/${barberId}/schedule`, scheduleFetcher)
 
   useEffect(() => {
     const rows = asList<ScheduleRow>(scheduleData, "schedules")
@@ -54,8 +54,8 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
             active: Boolean(found.is_active),
             split: hasSplit,
             morningStart: (found.morning_start ?? found.start_time ?? "09:00").slice(0, 5),
-            morningEnd: (found.morning_end ?? found.break_start ?? "13:00").slice(0, 5),
-            afternoonStart: (found.afternoon_start ?? found.break_end ?? "16:00").slice(0, 5),
+            morningEnd: (found.morning_end ?? found.break_start ?? "14:00").slice(0, 5),
+            afternoonStart: (found.afternoon_start ?? found.break_end ?? "17:00").slice(0, 5),
             afternoonEnd: (found.afternoon_end ?? found.end_time ?? "22:00").slice(0, 5),
           }
         }),
@@ -67,10 +67,10 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
   const { data, mutate } = useSWR(exKey, fetcher)
   const exceptions = asList<BarberException>(data, "exceptions")
 
-  const [exDate, setExDate] = useState(todayISO)
+  const [exDateDMY, setExDateDMY] = useState(() => formatDMY(todayISO()))
   const [fullDay, setFullDay] = useState(true)
-  const [blockedStart, setBlockedStart] = useState("13:00")
-  const [blockedEnd, setBlockedEnd] = useState("16:00")
+  const [blockedStart, setBlockedStart] = useState("14:00")
+  const [blockedEnd, setBlockedEnd] = useState("17:00")
   const [reason, setReason] = useState("")
   const [savingEx, setSavingEx] = useState(false)
 
@@ -99,6 +99,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
         body: JSON.stringify(payload),
       })
       toast.success("Horarios del barbero guardados")
+      await mutateSchedule()
     } catch (err) {
       toast.error(errorMessage(err))
     } finally {
@@ -108,8 +109,9 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
 
   async function addException(e: React.FormEvent) {
     e.preventDefault()
-    if (!exDate) {
-      toast.error("Seleccioná una fecha para el bloqueo")
+    const isoDate = parseDMYToISO(exDateDMY)
+    if (!isoDate) {
+      toast.error("Ingresá la fecha en formato DD/MM/AAAA (ej: 20/11/2026)")
       return
     }
     setSavingEx(true)
@@ -117,8 +119,8 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
       await apiRequest(exKey, {
         method: "POST",
         body: JSON.stringify({
-          date: exDate,
-          target_date: exDate,
+          date: isoDate,
+          target_date: isoDate,
           is_full_day_off: fullDay,
           blocked_start: fullDay ? null : blockedStart,
           blocked_end: fullDay ? null : blockedEnd,
@@ -148,7 +150,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
     <div className="flex flex-col gap-6">
       <div>
         <h3 className="mb-3 text-[13px] font-semibold uppercase tracking-wider text-neutral-500">Horario semanal</h3>
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2.5">
           {WEEKDAYS_MON_FIRST.map((label, i) => (
             <li key={label} className="flex flex-col gap-2 rounded-xl border border-border p-3">
               <div className="flex items-center justify-between gap-2">
@@ -169,7 +171,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
                       onChange={(e) => updateDay(i, { split: e.target.checked })}
                       className="size-3.5 accent-[var(--color-copper)]"
                     />
-                    2 turnos (cortado)
+                    Horario cortado (2 turnos)
                   </label>
                 ) : (
                   <span className="text-xs text-neutral-400">Cerrado / Franco</span>
@@ -179,41 +181,53 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
               {days[i].active ? (
                 <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:flex-wrap">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-14 text-xs text-neutral-500">{days[i].split ? "Mañana" : "Horario"}</span>
-                    <Input
-                      type="time"
+                    <span className="w-14 text-xs text-neutral-500">{days[i].split ? "Mañana" : "Corrido"}</span>
+                    <Select
                       value={days[i].morningStart}
                       onChange={(e) => updateDay(i, { morningStart: e.target.value })}
-                      className="h-9 w-26 px-2 text-sm"
+                      className="h-9 w-26 px-2.5 text-xs"
                       aria-label={`${label} mañana desde`}
-                    />
+                    >
+                      {TIME_OPTIONS_24H.map((t) => (
+                        <option key={t} value={t}>{t} hs</option>
+                      ))}
+                    </Select>
                     <span className="text-neutral-400">a</span>
-                    <Input
-                      type="time"
+                    <Select
                       value={days[i].morningEnd}
                       onChange={(e) => updateDay(i, { morningEnd: e.target.value })}
-                      className="h-9 w-26 px-2 text-sm"
+                      className="h-9 w-26 px-2.5 text-xs"
                       aria-label={`${label} mañana hasta`}
-                    />
+                    >
+                      {TIME_OPTIONS_24H.map((t) => (
+                        <option key={t} value={t}>{t} hs</option>
+                      ))}
+                    </Select>
                   </div>
                   {days[i].split ? (
                     <div className="flex items-center gap-1.5">
                       <span className="w-14 text-xs text-neutral-500 sm:w-auto sm:pl-2">Tarde</span>
-                      <Input
-                        type="time"
+                      <Select
                         value={days[i].afternoonStart}
                         onChange={(e) => updateDay(i, { afternoonStart: e.target.value })}
-                        className="h-9 w-26 px-2 text-sm"
+                        className="h-9 w-26 px-2.5 text-xs"
                         aria-label={`${label} tarde desde`}
-                      />
+                      >
+                        {TIME_OPTIONS_24H.map((t) => (
+                          <option key={t} value={t}>{t} hs</option>
+                        ))}
+                      </Select>
                       <span className="text-neutral-400">a</span>
-                      <Input
-                        type="time"
+                      <Select
                         value={days[i].afternoonEnd}
                         onChange={(e) => updateDay(i, { afternoonEnd: e.target.value })}
-                        className="h-9 w-26 px-2 text-sm"
+                        className="h-9 w-26 px-2.5 text-xs"
                         aria-label={`${label} tarde hasta`}
-                      />
+                      >
+                        {TIME_OPTIONS_24H.map((t) => (
+                          <option key={t} value={t}>{t} hs</option>
+                        ))}
+                      </Select>
                     </div>
                   ) : null}
                 </div>
@@ -230,15 +244,31 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
       <div>
         <h3 className="mb-3 text-[13px] font-semibold uppercase tracking-wider text-neutral-500">Bloqueos</h3>
         <form onSubmit={addException} noValidate className="flex flex-col gap-3 rounded-xl bg-neutral-50 p-4">
-          <Field label="Fecha" htmlFor={`ex-date-${barberId}`} required>
-            <Input id={`ex-date-${barberId}`} type="date" value={exDate} onChange={(e) => setExDate(e.target.value)} className="h-10" />
+          <Field label="Fecha (DD/MM/AAAA)" htmlFor={`ex-date-${barberId}`} required>
+            <Input
+              id={`ex-date-${barberId}`}
+              type="text"
+              inputMode="numeric"
+              placeholder="DD/MM/AAAA"
+              value={exDateDMY}
+              onChange={(e) => setExDateDMY(maskDMYInput(e.target.value))}
+              className="h-10"
+            />
           </Field>
           <Toggle checked={fullDay} onChange={setFullDay} label="Día completo libre" />
           {!fullDay ? (
             <div className="flex items-center gap-2">
-              <Input type="time" value={blockedStart} onChange={(e) => setBlockedStart(e.target.value)} className="h-10" aria-label="Bloqueo desde" />
+              <Select value={blockedStart} onChange={(e) => setBlockedStart(e.target.value)} className="h-10 w-32 px-3 text-sm" aria-label="Bloqueo desde">
+                {TIME_OPTIONS_24H.map((t) => (
+                  <option key={t} value={t}>{t} hs</option>
+                ))}
+              </Select>
               <span className="text-neutral-400">a</span>
-              <Input type="time" value={blockedEnd} onChange={(e) => setBlockedEnd(e.target.value)} className="h-10" aria-label="Bloqueo hasta" />
+              <Select value={blockedEnd} onChange={(e) => setBlockedEnd(e.target.value)} className="h-10 w-32 px-3 text-sm" aria-label="Bloqueo hasta">
+                {TIME_OPTIONS_24H.map((t) => (
+                  <option key={t} value={t}>{t} hs</option>
+                ))}
+              </Select>
             </div>
           ) : null}
           <Field label="Motivo" htmlFor={`ex-reason-${barberId}`}>
@@ -257,7 +287,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
               return (
                 <li key={ex.id} className="flex items-center gap-3 py-2.5">
                   <div className="min-w-0 flex-1 text-sm">
-                    <span className="font-medium text-ink">{d ? formatShortDate(d) : "—"}</span>
+                    <span className="font-medium text-ink">{d ? formatDMY(d) : "—"}</span>
                     <span className="text-neutral-500">
                       {" · "}
                       {ex.is_full_day_off
