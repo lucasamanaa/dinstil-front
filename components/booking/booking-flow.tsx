@@ -85,6 +85,7 @@ export function BookingFlow() {
       <BookingSuccess
         shopName={shop?.name}
         address={shop?.address}
+        shopPhone={shop?.phone}
         date={result.response.target_date ?? date}
         time={result.response.start_time?.slice(0, 5) ?? time}
         serviceName={service.name}
@@ -101,7 +102,7 @@ export function BookingFlow() {
     )
   } else {
     content = (
-      <div key={step} className="px-5 pt-6 pb-10 animate-in fade-in duration-150 w-full max-w-full overflow-x-hidden">
+      <div key={step} className="w-full max-w-full overflow-x-hidden px-5 pt-6 pb-10 animate-in fade-in duration-150">
         {step === 1 ? (
           <StepService
             services={serviceList}

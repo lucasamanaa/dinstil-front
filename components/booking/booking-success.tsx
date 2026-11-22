@@ -4,13 +4,23 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Check, Copy, ExternalLink, MessageCircle } from "lucide-react"
 import { formatPrice } from "@/lib/api"
-import { formatLongDate } from "@/lib/dates"
+import { formatDMY, formatLongDate } from "@/lib/dates"
 import { BrandLogo } from "@/components/brand-logo"
 import { Btn } from "@/components/ds/primitives"
+
+function normalizeArPhone(raw?: string | null): string {
+  const digits = (raw ?? "").replace(/\D/g, "")
+  if (!digits) return ""
+  const clean = digits.startsWith("0") ? digits.slice(1) : digits
+  if (clean.startsWith("549")) return clean
+  if (clean.startsWith("54")) return `549${clean.slice(2)}`
+  return `549${clean}`
+}
 
 export function BookingSuccess({
   shopName,
   address,
+  shopPhone,
   date,
   time,
   barber,
@@ -26,6 +36,7 @@ export function BookingSuccess({
 }: {
   shopName?: string | null
   address?: string | null
+  shopPhone?: string | null
   date: string
   time: string
   barber: string
@@ -49,6 +60,14 @@ export function BookingSuccess({
     ...(address ? [{ label: "Dirección", value: address }] : []),
   ]
 
+  const fallbackProofMsg = `Hola ${shopName?.trim() || "DIN STIL"}, te envío el comprobante de seña (${formatPrice(depositAmount ?? 0)}) para mi turno de ${serviceName} con ${barber} el ${formatDMY(date)} a las ${time} hs.`
+  const targetShopPhone = normalizeArPhone(shopPhone)
+  const whatsappProofUrl =
+    proofWameUrl ||
+    (targetShopPhone
+      ? `https://wa.me/${targetShopPhone}?text=${encodeURIComponent(fallbackProofMsg)}`
+      : `https://wa.me/?text=${encodeURIComponent(fallbackProofMsg)}`)
+
   async function copyOnlyAlias() {
     const cleanAlias = mpAlias?.trim()
     if (!cleanAlias) return
@@ -61,7 +80,6 @@ export function BookingSuccess({
       }
     } catch {}
 
-    // Respaldo compatible con Safari iOS en modo privado
     if (!ok) {
       const el = document.createElement("textarea")
       el.value = cleanAlias
@@ -83,7 +101,7 @@ export function BookingSuccess({
       toast.success(`Alias "${cleanAlias}" copiado`)
       setTimeout(() => setCopied(false), 2500)
     } else {
-      toast.error("No se pudo copiar automáticamente. Mantené presionado el alias para copiarlo.")
+      toast.error("Mantené presionado el alias para copiarlo.")
     }
   }
 
@@ -122,23 +140,20 @@ export function BookingSuccess({
                 </Btn>
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-neutral-600">
-                1. Tocá <strong>Copiar</strong> · 2. Abrí tu billetera o banco (Mercado Pago, MODO, Ualá, etc.) y transferí la seña · 3. Enviá el comprobante por WhatsApp.
+                1. Tocá <strong>Copiar</strong> · 2. Abrí Mercado Pago o tu banco y pegá el alias · 3. Enviá el comprobante por WhatsApp.
               </p>
             </>
           ) : null}
 
-          {proofWameUrl ? (
-            <Btn
-              type="button"
-              size="md"
-              variant="primary"
-              className="mt-3 w-full"
-              onClick={() => window.open(proofWameUrl, "_blank", "noopener,noreferrer")}
-            >
-              <MessageCircle className="size-4" aria-hidden="true" />
-              Enviar comprobante por WhatsApp
-            </Btn>
-          ) : null}
+          <a
+            href={whatsappProofUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-medium text-white transition-all hover:bg-brand/90 active:scale-[0.98]"
+          >
+            <MessageCircle className="size-4" aria-hidden="true" />
+            Enviar comprobante por WhatsApp
+          </a>
         </div>
       ) : null}
 
