@@ -30,7 +30,14 @@ export function StepService({
                 )}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-medium text-ink">{service.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-[15px] font-medium text-ink">{service.name}</p>
+                    {service.requires_deposit ? (
+                      <span className="rounded-full bg-copper/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-copper">
+                        Requiere seña
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-0.5 flex items-center gap-1 text-[13px] text-neutral-500">
                     <Clock className="size-3.5" aria-hidden="true" />
                     {service.duration_minutes} min

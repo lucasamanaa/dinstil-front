@@ -25,8 +25,9 @@ export function SettingsTab({ shop, onSaved }: { shop?: Shop | null; onSaved: ()
   const [days, setDays] = useState<number[]>(
     shop?.open_days ? shop.open_days.split(",").map((d) => Number(d.trim())) : [0, 1, 2, 3, 4, 5],
   )
-  const [requireDeposit, setRequireDeposit] = useState(Boolean(shop?.require_deposit))
   const [depositPercent, setDepositPercent] = useState(String(shop?.deposit_percent ?? shop?.deposit_percentage ?? 30))
+  const [mpAlias, setMpAlias] = useState(shop?.mp_alias ?? "")
+  const [mpHolder, setMpHolder] = useState(shop?.mp_account_holder ?? "")
   const [saving, setSaving] = useState(false)
 
   async function save(e: React.FormEvent) {
@@ -77,9 +78,11 @@ export function SettingsTab({ shop, onSaved }: { shop?: Shop | null; onSaved: ()
           break_start: breakStart,
           break_end: breakEnd,
           open_days: [...days].sort().join(","),
-          require_deposit: requireDeposit,
+          require_deposit: false,
           deposit_percent: Number(depositPercent) || 30,
           deposit_percentage: Number(depositPercent) || 30,
+          mp_alias: mpAlias.trim(),
+          mp_account_holder: mpHolder.trim(),
           schedules,
         }),
       })
@@ -94,19 +97,38 @@ export function SettingsTab({ shop, onSaved }: { shop?: Shop | null; onSaved: ()
 
   return (
     <form onSubmit={save} noValidate className="grid gap-5 lg:grid-cols-2">
-      <Panel title="Datos de la barbería">
-        <div className="flex flex-col gap-4">
-          <Field label="Nombre" htmlFor="shop-name" required>
-            <Input id="shop-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="DIN STIL" />
-          </Field>
-          <Field label="Dirección" htmlFor="shop-address">
-            <Input id="shop-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Villegas 456" />
-          </Field>
-          <Field label="Teléfono / WhatsApp" htmlFor="shop-phone">
-            <Input id="shop-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+5492804875252" />
-          </Field>
-        </div>
-      </Panel>
+      <div className="flex flex-col gap-5">
+        <Panel title="Datos de la barbería">
+          <div className="flex flex-col gap-4">
+            <Field label="Nombre" htmlFor="shop-name" required>
+              <Input id="shop-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="DIN STIL" />
+            </Field>
+            <Field label="Dirección" htmlFor="shop-address">
+              <Input id="shop-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Villegas 456" />
+            </Field>
+            <Field label="Teléfono / WhatsApp" htmlFor="shop-phone" hint="Se usa para recibir comprobantes de seña por WhatsApp">
+              <Input id="shop-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+5492804875252" />
+            </Field>
+          </div>
+        </Panel>
+
+        <Panel
+          title="Señas y Mercado Pago"
+          description="Estos datos solo se le muestran al cliente si el servicio elegido tiene activado 'Requiere seña' en Equipo y Servicios"
+        >
+          <div className="flex flex-col gap-4">
+            <Field label="Alias de Mercado Pago / Transferencia" htmlFor="shop-alias">
+              <Input id="shop-alias" value={mpAlias} onChange={(e) => setMpAlias(e.target.value)} placeholder="dinstil.barber.mp" />
+            </Field>
+            <Field label="Titular de la cuenta" htmlFor="shop-holder">
+              <Input id="shop-holder" value={mpHolder} onChange={(e) => setMpHolder(e.target.value)} placeholder="Nombre y apellido del titular" />
+            </Field>
+            <Field label="Porcentaje de seña (%)" htmlFor="shop-deposit" required>
+              <Input id="shop-deposit" type="number" min={1} max={100} value={depositPercent} onChange={(e) => setDepositPercent(e.target.value)} className="w-32" />
+            </Field>
+          </div>
+        </Panel>
+      </div>
 
       <div className="flex flex-col gap-5">
         <Panel title="Horario general de apertura">
@@ -182,22 +204,6 @@ export function SettingsTab({ shop, onSaved }: { shop?: Shop | null; onSaved: ()
                 ))}
               </div>
             </fieldset>
-          </div>
-        </Panel>
-
-        <Panel title="Seña">
-          <div className="flex flex-col gap-4">
-            <Toggle
-              checked={requireDeposit}
-              onChange={setRequireDeposit}
-              label="Pedir seña con Mercado Pago"
-              description="El cliente es redirigido a Mercado Pago al confirmar la reserva"
-            />
-            {requireDeposit ? (
-              <Field label="Porcentaje de seña" htmlFor="shop-deposit" required>
-                <Input id="shop-deposit" type="number" min={1} max={100} value={depositPercent} onChange={(e) => setDepositPercent(e.target.value)} className="w-32" />
-              </Field>
-            ) : null}
           </div>
         </Panel>
 

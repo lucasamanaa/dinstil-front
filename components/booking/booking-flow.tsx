@@ -64,8 +64,8 @@ export function BookingFlow() {
   if (barber && step > 2) pills.push({ step: 2, label: barber.name })
   if (time && step > 3) pills.push({ step: 3, label: `${formatShortDate(date)} · ${time}` })
 
-  const requireDeposit = Boolean(shop?.require_deposit)
-  const depositPercent = Number(shop?.deposit_percent ?? 20) || 20
+  const requireDeposit = Boolean(service?.requires_deposit)
+  const depositPercent = Number(shop?.deposit_percent ?? shop?.deposit_percentage ?? 30) || 30
 
   let content: React.ReactNode
   if (services.isLoading) {
@@ -90,7 +90,12 @@ export function BookingFlow() {
         serviceName={service.name}
         barber={(typeof assigned === "string" ? assigned : assigned?.name) || barber?.name || "A confirmar"}
         total={result.total}
+        requiresDeposit={Boolean(result.response.requires_deposit ?? requireDeposit)}
+        depositAmount={result.response.deposit_amount}
+        mpAlias={result.response.mp_alias ?? shop?.mp_alias}
+        mpAccountHolder={result.response.mp_account_holder ?? shop?.mp_account_holder}
         mercadopagoUrl={result.response.mercadopago_url}
+        proofWameUrl={result.response.proof_wame_url}
         onRestart={restart}
       />
     )

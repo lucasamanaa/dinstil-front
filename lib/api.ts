@@ -22,6 +22,8 @@ export type Shop = {
   require_deposit?: boolean
   deposit_percent?: number | null
   deposit_percentage?: number | null
+  mp_alias?: string | null
+  mp_account_holder?: string | null
   opening_time?: string | null
   closing_time?: string | null
   break_start?: string | null
@@ -41,6 +43,7 @@ export type Service = {
   category?: string | null
   price: number
   duration_minutes: number
+  requires_deposit?: boolean
 }
 
 export type Barber = {
@@ -69,28 +72,108 @@ export type CouponValidation = {
   detail?: string
 }
 
-export type AppointmentStatus = "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED" | "PENDING"
+export type AppointmentStatus = "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED"
 
 export type CalendarAppointment = {
   id: number
   start_time: string
   end_time?: string
   status: AppointmentStatus
+  reminder_sent?: boolean
+  client_id?: number
   client_name?: string
   first_name?: string
   last_name?: string
   phone?: string
   client_phone?: string
+  barber_id?: number
   barber_name?: string
+  service_id?: number
   service_name?: string
+  duration_minutes?: number
   price?: number
   total?: number
+  total_price?: number
+  deposit_amount?: number
   notes?: string | null
+  reminder_wame_url?: string
+}
+
+export type CalendarBarberColumn = {
+  id: number
+  name: string
+  photo_url?: string | null
+  is_working: boolean
+  is_day_off: boolean
+  start_time: string
+  end_time: string
+  break_start?: string | null
+  break_end?: string | null
+  appointments_count: number
+  completed_count: number
+  cash_collected: number
+  pending_revenue: number
+}
+
+export type CalendarDaySummary = {
+  cash_collected: number
+  pending_revenue: number
+  total_active: number
+  completed_count: number
+  confirmed_count: number
+  no_show_count: number
+  cancelled_count: number
+  occupancy_rate: number
+  attendance_rate: number
 }
 
 export type CalendarResponse = {
+  date?: string
+  total_appointments?: number
+  barbers?: CalendarBarberColumn[]
   appointments?: CalendarAppointment[]
   people_per_slot?: Record<string, number> | { time: string; count: number }[]
+  day_summary?: CalendarDaySummary
+}
+
+export type ReportResponse = {
+  period: "day" | "month" | "year"
+  start_date: string
+  end_date: string
+  cash_collected: number
+  pending_revenue: number
+  lost_revenue: number
+  average_ticket: number
+  total_bookings: number
+  active_bookings: number
+  completed_count: number
+  confirmed_count: number
+  no_show_count: number
+  cancelled_count: number
+  unique_clients: number
+  completion_rate: number
+  no_show_rate: number
+  occupancy_rate?: number | null
+  by_barber: {
+    barber_id: number
+    barber_name: string
+    completed_count: number
+    confirmed_count: number
+    no_show_count: number
+    cash_collected: number
+    pending_revenue: number
+  }[]
+  by_service: {
+    service_id: number
+    service_name: string
+    count: number
+    cash_collected: number
+  }[]
+  timeline: {
+    label: string
+    cash: number
+    count: number
+  }[]
 }
 
 export type BarberException = {
@@ -108,20 +191,39 @@ export type Client = {
   first_name?: string
   last_name?: string
   phone?: string
+  dni?: string | null
   email?: string | null
   birth_date?: string | null
+  created_at?: string | null
   visits?: number
   appointments_count?: number
+  total_cuts?: number
+  completed_cuts?: number
+  no_shows?: number
+  total_spent?: number
   last_visit?: string | null
+  days_since_last_visit?: number | null
+  avg_days_between_visits?: number | null
+  favorite_barber?: string | null
+  favorite_service?: string | null
+  is_birthday_today?: boolean
+  is_birthday_month?: boolean
 }
 
 export type AppointmentCreated = {
   id?: number
+  appointment_id?: number
+  status?: string
   barber_assigned?: string | { name?: string }
+  requires_deposit?: boolean
+  deposit_amount?: number
+  mp_alias?: string | null
+  mp_account_holder?: string | null
   mercadopago_url?: string | null
+  proof_wame_url?: string | null
+  wame_url?: string | null
   total?: number
   total_price?: number
-  deposit_amount?: number
   target_date?: string
   start_time?: string
 }

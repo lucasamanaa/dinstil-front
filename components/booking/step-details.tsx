@@ -15,6 +15,7 @@ type ClientProfile = {
   first_name?: string
   last_name?: string
   phone?: string
+  dni?: string
   email?: string
   has_birth_date?: boolean
 }
@@ -66,6 +67,7 @@ export function StepDetails({
   const [firstName, setFirstName] = useState(profile.first_name ?? "")
   const [lastName, setLastName] = useState(profile.last_name ?? "")
   const [phone, setPhone] = useState(profile.phone ?? "")
+  const [dni, setDni] = useState(profile.dni ?? "")
   const [email, setEmail] = useState(profile.email ?? "")
   const [birthDateDMY, setBirthDateDMY] = useState("")
   const [editBirthday, setEditBirthday] = useState(!profile.has_birth_date)
@@ -145,6 +147,7 @@ export function StepDetails({
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           phone: `+54${phoneDigits}`,
+          dni: dni.replace(/\D/g, "") || null,
           email: email.trim() || null,
           birth_date: isoBirth,
           notes: notes.trim() || null,
@@ -155,6 +158,7 @@ export function StepDetails({
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         phone: phoneDigits,
+        dni: dni.replace(/\D/g, ""),
         email: email.trim(),
         has_birth_date: profile.has_birth_date || Boolean(isoBirth),
       }
@@ -232,9 +236,14 @@ export function StepDetails({
         </div>
       </Field>
 
-      <Field label="Correo electrónico" htmlFor="email" className="mt-4">
-        <Input id="email" type="text" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      </Field>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Field label="DNI" htmlFor="dni">
+          <Input id="dni" type="text" inputMode="numeric" value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="Sin puntos" />
+        </Field>
+        <Field label="Correo electrónico" htmlFor="email">
+          <Input id="email" type="text" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </Field>
+      </div>
 
       {editBirthday ? (
         <Field label="Fecha de cumpleaños" htmlFor="birth_date" hint="Formato Día/Mes/Año (ej: 23/03/1998) para darte un descuento en tu día" className="mt-4">
@@ -313,6 +322,12 @@ export function StepDetails({
           <span>Total</span>
           <span className="text-copper">{formatPrice(total)}</span>
         </div>
+        {requireDeposit ? (
+          <div className="mt-1 flex justify-between rounded-xl border border-copper/30 bg-copper/5 px-3 py-2 text-xs font-medium text-copper">
+            <span>Este servicio requiere seña ({depositPercent}%)</span>
+            <span className="font-bold">{formatPrice(deposit)}</span>
+          </div>
+        ) : null}
       </div>
 
       {error ? (
@@ -325,7 +340,7 @@ export function StepDetails({
         <div className="mx-auto max-w-md px-5 pb-[max(env(safe-area-inset-bottom),16px)] pt-3">
           <Btn type="submit" size="lg" className="w-full" disabled={submitting}>
             {submitting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-            {requireDeposit ? `Pagar seña ${depositPercent}% (${formatPrice(deposit)}) y Reservar` : "Confirmar Reserva"}
+            {requireDeposit ? `Reservar y ver datos de seña (${formatPrice(deposit)})` : "Confirmar Reserva"}
           </Btn>
         </div>
       </div>

@@ -6,10 +6,17 @@ import { toast } from "sonner"
 import { Loader2, Pencil, Plus, Scissors, Trash2 } from "lucide-react"
 import { apiRequest, asList, fetcher, formatPrice, type Service } from "@/lib/api"
 import { Btn, Field, Input, Skeleton } from "@/components/ds/primitives"
-import { EmptyBlock, Panel, errorMessage } from "./admin-ui"
+import { EmptyBlock, Panel, Toggle, errorMessage } from "./admin-ui"
 
-type Draft = { name: string; category: string; price: string; duration_minutes: string }
-const EMPTY: Draft = { name: "", category: "", price: "", duration_minutes: "30" }
+type Draft = {
+  name: string
+  category: string
+  price: string
+  duration_minutes: string
+  requires_deposit: boolean
+}
+
+const EMPTY: Draft = { name: "", category: "", price: "", duration_minutes: "30", requires_deposit: false }
 
 export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
   const { data, isLoading, mutate } = useSWR("/api/services", fetcher)
@@ -27,6 +34,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
             category: service.category ?? "",
             price: String(service.price),
             duration_minutes: String(service.duration_minutes),
+            requires_deposit: Boolean(service.requires_deposit),
           }
         : EMPTY,
     )
@@ -48,6 +56,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
       category: draft.category.trim(),
       price: Number(draft.price),
       duration_minutes: Number(draft.duration_minutes) || 30,
+      requires_deposit: draft.requires_deposit,
     })
     try {
       if (editingId === "new") await apiRequest("/api/services", { method: "POST", body })
@@ -89,6 +98,14 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
       <Field label="Duración (min)" htmlFor="svc-dur" required>
         <Input id="svc-dur" type="number" min={5} step={5} inputMode="numeric" value={draft.duration_minutes} onChange={(e) => setDraft({ ...draft, duration_minutes: e.target.value })} />
       </Field>
+      <div className="col-span-2 rounded-xl border border-border bg-white p-3">
+        <Toggle
+          checked={draft.requires_deposit}
+          onChange={(v) => setDraft({ ...draft, requires_deposit: v })}
+          label="Requiere seña (Mercado Pago / Alias)"
+          description="Solo se pedirán datos de seña al cliente si elige este servicio"
+        />
+      </div>
       <div className="col-span-2 flex justify-end gap-2">
         <Btn type="button" variant="ghost" onClick={() => setEditingId(null)}>
           Cancelar
@@ -104,7 +121,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
   return (
     <Panel
       title="Servicios"
-      description="Lo que tus clientes pueden reservar"
+      description="Definí qué servicios requieren seña y cuáles se reservan directo"
       action={
         editingId === null ? (
           <Btn size="sm" onClick={() => startEdit()}>
@@ -132,7 +149,14 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
             ) : (
               <li key={service.id} className="flex items-center gap-3 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink">{service.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-medium text-ink">{service.name}</p>
+                    {service.requires_deposit ? (
+                      <span className="rounded-full bg-copper/10 px-2 py-0.5 text-[11px] font-semibold text-copper">
+                        Con seña
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="text-[13px] text-neutral-500">
                     {service.duration_minutes} min{service.category ? ` · ${service.category}` : ""}
                   </p>
