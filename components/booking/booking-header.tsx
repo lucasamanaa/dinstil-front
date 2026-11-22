@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react"
 import { BrandLogo } from "@/components/brand-logo"
+import { PwaInstallButton } from "@/components/pwa-install-button"
 import { cn } from "@/lib/utils"
 
 export type SummaryPill = { step: number; label: string }
@@ -34,6 +35,9 @@ export function BookingHeader({
           </button>
         ) : null}
         <BrandLogo name={shopName} />
+        <div className="absolute right-3">
+          <PwaInstallButton />
+        </div>
       </div>
 
       {showProgress ? (

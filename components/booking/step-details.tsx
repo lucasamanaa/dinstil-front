@@ -214,12 +214,12 @@ export function StepDetails({
       <div className="rounded-2xl border border-border bg-white p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold text-ink">{service.name}</p>
+            <p className="truncate text-base font-semibold text-ink">{service.name}</p>
             <p className="mt-0.5 text-[13px] text-neutral-500">
               con {barberName} · {formatShortDate(date)} · {time} hs
             </p>
           </div>
-          <span className="text-[15px] font-semibold text-copper">{formatPrice(price)}</span>
+          <span className="text-base font-semibold text-copper">{formatPrice(price)}</span>
         </div>
         <div className="mt-3 flex gap-1.5 border-t border-border pt-3">
           {[
@@ -265,7 +265,7 @@ export function StepDetails({
 
       <Field label="Teléfono" htmlFor="phone" required hint="Código de área sin 0 y número sin 15. Ej: 280 455 0000" className="mt-4">
         <div className="flex h-12 items-center rounded-xl border border-input bg-white focus-within:border-ink">
-          <span className="border-r border-border px-3 text-[15px] font-medium text-neutral-500">+54</span>
+          <span className="border-r border-border px-3 text-base font-medium text-neutral-500">+54</span>
           <input
             id="phone"
             type="tel"
@@ -275,7 +275,7 @@ export function StepDetails({
             onChange={(e) => handlePhoneChange(e.target.value)}
             onBlur={() => setPhone(phoneDigits)}
             placeholder="280 455 0000"
-            className="h-full min-w-0 flex-1 bg-transparent px-3 text-[15px] text-ink outline-none placeholder:text-neutral-400"
+            className="h-full min-w-0 flex-1 bg-transparent px-3 text-base text-ink outline-none placeholder:text-neutral-400"
           />
         </div>
       </Field>

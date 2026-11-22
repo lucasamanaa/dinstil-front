@@ -2,7 +2,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 export const inputClass =
-  "h-12 w-full rounded-xl border border-input bg-white px-4 text-[15px] text-ink placeholder:text-neutral-400 outline-none transition-colors focus:border-ink focus-visible:ring-0 disabled:opacity-50"
+  "h-12 w-full rounded-xl border border-input bg-white px-4 text-base text-ink placeholder:text-neutral-400 outline-none transition-colors focus:border-ink focus-visible:ring-0 disabled:opacity-50"
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => <input ref={ref} className={cn(inputClass, className)} {...props} />,
@@ -76,7 +76,7 @@ export function Btn({
         "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
         size === "sm" && "h-9 px-3 text-[13px]",
         size === "md" && "h-11 px-4 text-sm",
-        size === "lg" && "h-14 px-5 text-[15px]",
+        size === "lg" && "h-14 px-5 text-base",
         buttonVariants[variant],
         className,
       )}
