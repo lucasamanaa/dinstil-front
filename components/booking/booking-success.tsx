@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import { Check, Copy, ExternalLink, MessageCircle, Wallet } from "lucide-react"
+import { Check, Copy, ExternalLink, MessageCircle } from "lucide-react"
 import { formatPrice } from "@/lib/api"
 import { formatLongDate } from "@/lib/dates"
 import { BrandLogo } from "@/components/brand-logo"
@@ -49,27 +49,41 @@ export function BookingSuccess({
     ...(address ? [{ label: "Dirección", value: address }] : []),
   ]
 
-  function copyOnlyAlias() {
+  async function copyOnlyAlias() {
     const cleanAlias = mpAlias?.trim()
     if (!cleanAlias) return
-    navigator.clipboard?.writeText(cleanAlias).catch(() => {})
-    setCopied(true)
-    toast.success(`Alias "${cleanAlias}" copiado`)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
-  async function chooseVirtualWallet() {
-    const cleanAlias = mpAlias?.trim()
-    if (!cleanAlias) return
-    navigator.clipboard?.writeText(cleanAlias).catch(() => {})
-    if (typeof navigator !== "undefined" && navigator.share) {
+    let ok = false
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(cleanAlias)
+        ok = true
+      }
+    } catch {}
+
+    // Respaldo compatible con Safari iOS en modo privado
+    if (!ok) {
+      const el = document.createElement("textarea")
+      el.value = cleanAlias
+      el.setAttribute("readonly", "")
+      el.style.position = "fixed"
+      el.style.opacity = "0"
+      document.body.appendChild(el)
+      el.select()
+      el.setSelectionRange(0, cleanAlias.length)
       try {
-        await navigator.share({ text: cleanAlias })
+        document.execCommand("copy")
+        ok = true
       } catch {}
-    } else {
+      document.body.removeChild(el)
+    }
+
+    if (ok) {
       setCopied(true)
-      toast.success(`Alias "${cleanAlias}" copiado. Abrí tu billetera virtual para pegar y transferir.`)
+      toast.success(`Alias "${cleanAlias}" copiado`)
       setTimeout(() => setCopied(false), 2500)
+    } else {
+      toast.error("No se pudo copiar automáticamente. Mantené presionado el alias para copiarlo.")
     }
   }
 
@@ -95,40 +109,36 @@ export function BookingSuccess({
           </div>
 
           {mpAlias ? (
-            <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-border bg-white px-3 py-2.5">
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] text-neutral-500">Alias para transferir</p>
-                <p className="truncate font-mono text-sm font-bold text-ink">{mpAlias}</p>
-                {mpAccountHolder ? <p className="truncate text-[11px] text-neutral-500">Titular: {mpAccountHolder}</p> : null}
+            <>
+              <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-border bg-white px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] text-neutral-500">Alias para transferir</p>
+                  <p className="select-all truncate font-mono text-sm font-bold text-ink">{mpAlias}</p>
+                  {mpAccountHolder ? <p className="truncate text-[11px] text-neutral-500">Titular: {mpAccountHolder}</p> : null}
+                </div>
+                <Btn type="button" size="sm" variant="dark" onClick={copyOnlyAlias} className="shrink-0">
+                  {copied ? <Check className="size-3.5" aria-hidden="true" /> : <Copy className="size-3.5" aria-hidden="true" />}
+                  {copied ? "Copiado" : "Copiar"}
+                </Btn>
               </div>
-              <Btn type="button" size="sm" variant="dark" onClick={copyOnlyAlias} className="shrink-0">
-                {copied ? <Check className="size-3.5" aria-hidden="true" /> : <Copy className="size-3.5" aria-hidden="true" />}
-                {copied ? "Copiado" : "Copiar"}
-              </Btn>
-            </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-neutral-600">
+                1. Tocá <strong>Copiar</strong> · 2. Abrí tu billetera o banco (Mercado Pago, MODO, Ualá, etc.) y transferí la seña · 3. Enviá el comprobante por WhatsApp.
+              </p>
+            </>
           ) : null}
 
-          <div className="mt-3 flex flex-col gap-2">
-            {mpAlias ? (
-              <Btn type="button" size="md" variant="outline" className="w-full bg-white" onClick={chooseVirtualWallet}>
-                <Wallet className="size-4 text-brand" aria-hidden="true" />
-                Elegir billetera virtual
-              </Btn>
-            ) : null}
-
-            {proofWameUrl ? (
-              <Btn
-                type="button"
-                size="md"
-                variant="primary"
-                className="w-full"
-                onClick={() => window.open(proofWameUrl, "_blank", "noopener,noreferrer")}
-              >
-                <MessageCircle className="size-4" aria-hidden="true" />
-                Enviar comprobante por WhatsApp
-              </Btn>
-            ) : null}
-          </div>
+          {proofWameUrl ? (
+            <Btn
+              type="button"
+              size="md"
+              variant="primary"
+              className="mt-3 w-full"
+              onClick={() => window.open(proofWameUrl, "_blank", "noopener,noreferrer")}
+            >
+              <MessageCircle className="size-4" aria-hidden="true" />
+              Enviar comprobante por WhatsApp
+            </Btn>
+          ) : null}
         </div>
       ) : null}
 
