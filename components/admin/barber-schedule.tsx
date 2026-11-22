@@ -5,7 +5,7 @@ import useSWR from "swr"
 import { toast } from "sonner"
 import { Loader2, Trash2 } from "lucide-react"
 import { ApiError, apiRequest, asList, fetcher, type BarberException, type ScheduleRow } from "@/lib/api"
-import { formatDMY, maskDMYInput, normalizeTime, parseDMYToISO, TIME_OPTIONS_24H, todayISO, WEEKDAYS_MON_FIRST } from "@/lib/dates"
+import { formatDMY, maskDMYInput, normalizeTime, parseDMYToISO, formatTimeOptionLabel, TIME_OPTIONS_24H, todayISO, WEEKDAYS_MON_FIRST } from "@/lib/dates"
 import { Btn, Field, Input, Select } from "@/components/ds/primitives"
 import { Toggle, errorMessage } from "./admin-ui"
 
@@ -189,7 +189,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
                       aria-label={`${label} mañana desde`}
                     >
                       {TIME_OPTIONS_24H.map((t) => (
-                        <option key={t} value={t}>{t} hs</option>
+                        <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                       ))}
                     </Select>
                     <span className="text-neutral-400">a</span>
@@ -200,7 +200,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
                       aria-label={`${label} mañana hasta`}
                     >
                       {TIME_OPTIONS_24H.map((t) => (
-                        <option key={t} value={t}>{t} hs</option>
+                        <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                       ))}
                     </Select>
                   </div>
@@ -214,7 +214,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
                         aria-label={`${label} tarde desde`}
                       >
                         {TIME_OPTIONS_24H.map((t) => (
-                          <option key={t} value={t}>{t} hs</option>
+                          <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                         ))}
                       </Select>
                       <span className="text-neutral-400">a</span>
@@ -225,7 +225,7 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
                         aria-label={`${label} tarde hasta`}
                       >
                         {TIME_OPTIONS_24H.map((t) => (
-                          <option key={t} value={t}>{t} hs</option>
+                          <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                         ))}
                       </Select>
                     </div>
@@ -260,13 +260,13 @@ export function BarberSchedule({ barberId }: { barberId: number }) {
             <div className="flex items-center gap-2">
               <Select value={blockedStart} onChange={(e) => setBlockedStart(e.target.value)} className="h-10 w-32 px-3 text-sm" aria-label="Bloqueo desde">
                 {TIME_OPTIONS_24H.map((t) => (
-                  <option key={t} value={t}>{t} hs</option>
+                  <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                 ))}
               </Select>
               <span className="text-neutral-400">a</span>
               <Select value={blockedEnd} onChange={(e) => setBlockedEnd(e.target.value)} className="h-10 w-32 px-3 text-sm" aria-label="Bloqueo hasta">
                 {TIME_OPTIONS_24H.map((t) => (
-                  <option key={t} value={t}>{t} hs</option>
+                  <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                 ))}
               </Select>
             </div>

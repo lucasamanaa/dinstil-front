@@ -14,9 +14,17 @@ type Draft = {
   price: string
   duration_minutes: string
   requires_deposit: boolean
+  deposit_amount: string
 }
 
-const EMPTY: Draft = { name: "", category: "", price: "", duration_minutes: "30", requires_deposit: false }
+const EMPTY: Draft = {
+  name: "",
+  category: "",
+  price: "",
+  duration_minutes: "30",
+  requires_deposit: false,
+  deposit_amount: "",
+}
 
 export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
   const { data, isLoading, mutate } = useSWR("/api/services", fetcher)
@@ -35,6 +43,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
             price: String(service.price),
             duration_minutes: String(service.duration_minutes),
             requires_deposit: Boolean(service.requires_deposit),
+            deposit_amount: service.deposit_amount ? String(service.deposit_amount) : "",
           }
         : EMPTY,
     )
@@ -50,6 +59,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
       toast.error("Ingresá un precio válido")
       return
     }
+    const fixedDep = draft.requires_deposit && draft.deposit_amount.trim() ? Number(draft.deposit_amount) : null
     setSaving(true)
     const body = JSON.stringify({
       name: draft.name.trim(),
@@ -57,6 +67,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
       price: Number(draft.price),
       duration_minutes: Number(draft.duration_minutes) || 30,
       requires_deposit: draft.requires_deposit,
+      deposit_amount: fixedDep && fixedDep > 0 ? fixedDep : null,
     })
     try {
       if (editingId === "new") await apiRequest("/api/services", { method: "POST", body })
@@ -92,19 +103,36 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
       <Field label="Categoría" htmlFor="svc-cat" className="col-span-2">
         <Input id="svc-cat" value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} placeholder="Corte, Barba, Color…" />
       </Field>
-      <Field label="Precio" htmlFor="svc-price" required>
+      <Field label="Precio ($)" htmlFor="svc-price" required>
         <Input id="svc-price" type="number" min={0} inputMode="numeric" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
       </Field>
       <Field label="Duración (min)" htmlFor="svc-dur" required>
         <Input id="svc-dur" type="number" min={5} step={5} inputMode="numeric" value={draft.duration_minutes} onChange={(e) => setDraft({ ...draft, duration_minutes: e.target.value })} />
       </Field>
-      <div className="col-span-2 rounded-xl border border-border bg-white p-3">
+      <div className="col-span-2 flex flex-col gap-3 rounded-xl border border-border bg-white p-3.5">
         <Toggle
           checked={draft.requires_deposit}
           onChange={(v) => setDraft({ ...draft, requires_deposit: v })}
           label="Requiere seña (Mercado Pago / Alias)"
-          description="Solo se pedirán datos de seña al cliente si elige este servicio"
+          description="Activá si este servicio exige reserva previa"
         />
+        {draft.requires_deposit ? (
+          <Field
+            label="Monto fijo de reserva / seña ($)"
+            htmlFor="svc-deposit-amount"
+            hint="Si lo dejás vacío, se aplica el % general configurado en Ajustes"
+          >
+            <Input
+              id="svc-deposit-amount"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="Ej: 15000 (opcional)"
+              value={draft.deposit_amount}
+              onChange={(e) => setDraft({ ...draft, deposit_amount: e.target.value })}
+            />
+          </Field>
+        ) : null}
       </div>
       <div className="col-span-2 flex justify-end gap-2">
         <Btn type="button" variant="ghost" onClick={() => setEditingId(null)}>
@@ -121,7 +149,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
   return (
     <Panel
       title="Servicios"
-      description="Definí qué servicios requieren seña y cuáles se reservan directo"
+      description="Definí precios, duración y seña fija o porcentual por servicio"
       action={
         editingId === null ? (
           <Btn size="sm" onClick={() => startEdit()}>
@@ -153,7 +181,9 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
                     <p className="truncate text-sm font-medium text-ink">{service.name}</p>
                     {service.requires_deposit ? (
                       <span className="rounded-full bg-copper/10 px-2 py-0.5 text-[11px] font-semibold text-copper">
-                        Con seña
+                        {service.deposit_amount && service.deposit_amount > 0
+                          ? `Seña ${formatPrice(service.deposit_amount)}`
+                          : "Seña % general"}
                       </span>
                     ) : null}
                   </div>

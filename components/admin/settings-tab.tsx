@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { apiRequest, type Shop } from "@/lib/api"
-import { TIME_OPTIONS_24H } from "@/lib/dates"
+import { formatTimeOptionLabel, TIME_OPTIONS_24H } from "@/lib/dates"
 import { Btn, Field, Input, Select } from "@/components/ds/primitives"
 import { Checkbox, DAY_OPTIONS, Panel, Toggle, errorMessage } from "./admin-ui"
 
@@ -147,13 +147,13 @@ export function SettingsTab({ shop, onSaved }: { shop?: Shop | null; onSaved: ()
                   <div className="flex items-center gap-2">
                     <Select value={morningStart} onChange={(e) => setMorningStart(e.target.value)} className="h-10 w-28 px-3 text-sm" aria-label="Mañana desde">
                       {TIME_OPTIONS_24H.map((t) => (
-                        <option key={t} value={t}>{t} hs</option>
+                        <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                       ))}
                     </Select>
                     <span className="text-neutral-400">a</span>
                     <Select value={morningEnd} onChange={(e) => setMorningEnd(e.target.value)} className="h-10 w-28 px-3 text-sm" aria-label="Mañana hasta">
                       {TIME_OPTIONS_24H.map((t) => (
-                        <option key={t} value={t}>{t} hs</option>
+                        <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                       ))}
                     </Select>
                   </div>
@@ -163,13 +163,13 @@ export function SettingsTab({ shop, onSaved }: { shop?: Shop | null; onSaved: ()
                   <div className="flex items-center gap-2">
                     <Select value={afternoonStart} onChange={(e) => setAfternoonStart(e.target.value)} className="h-10 w-28 px-3 text-sm" aria-label="Tarde desde">
                       {TIME_OPTIONS_24H.map((t) => (
-                        <option key={t} value={t}>{t} hs</option>
+                        <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                       ))}
                     </Select>
                     <span className="text-neutral-400">a</span>
                     <Select value={afternoonEnd} onChange={(e) => setAfternoonEnd(e.target.value)} className="h-10 w-28 px-3 text-sm" aria-label="Tarde hasta">
                       {TIME_OPTIONS_24H.map((t) => (
-                        <option key={t} value={t}>{t} hs</option>
+                        <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                       ))}
                     </Select>
                   </div>
@@ -179,13 +179,13 @@ export function SettingsTab({ shop, onSaved }: { shop?: Shop | null; onSaved: ()
               <div className="flex items-center gap-2">
                 <Select value={opening} onChange={(e) => setOpening(e.target.value)} className="h-10 w-32 px-3 text-sm" aria-label="Apertura">
                   {TIME_OPTIONS_24H.map((t) => (
-                    <option key={t} value={t}>{t} hs</option>
+                    <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                   ))}
                 </Select>
                 <span className="text-neutral-400">a</span>
                 <Select value={closing} onChange={(e) => setClosing(e.target.value)} className="h-10 w-32 px-3 text-sm" aria-label="Cierre">
                   {TIME_OPTIONS_24H.map((t) => (
-                    <option key={t} value={t}>{t} hs</option>
+                    <option key={t} value={t}>{formatTimeOptionLabel(t)}</option>
                   ))}
                 </Select>
               </div>

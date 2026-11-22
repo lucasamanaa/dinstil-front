@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import { Cake, ChevronDown, Loader2, Pencil, Ticket } from "lucide-react"
+import { Cake, ChevronDown, Loader2, Pencil, RotateCcw, Ticket } from "lucide-react"
 import { apiRequest, formatPrice, type AppointmentCreated, type CouponValidation, type Service } from "@/lib/api"
 import { formatShortDate, maskDMYInput, parseDMYToISO } from "@/lib/dates"
 import { cn } from "@/lib/utils"
@@ -63,7 +63,7 @@ export function StepDetails({
   onEdit: (step: number) => void
   onConfirmed: (result: BookingResult) => void
 }) {
-  const [profile] = useState<ClientProfile>(readProfile)
+  const [profile, setProfile] = useState<ClientProfile>(readProfile)
   const [firstName, setFirstName] = useState(profile.first_name ?? "")
   const [lastName, setLastName] = useState(profile.last_name ?? "")
   const [phone, setPhone] = useState(profile.phone ?? "")
@@ -85,9 +85,39 @@ export function StepDetails({
   const price = Number(service.price)
   const discount = couponStatus ? (price * couponStatus.percent) / 100 : 0
   const total = Math.max(0, Math.round(price - discount))
-  const deposit = Math.round((total * depositPercent) / 100)
+
+  // Seña dual: monto fijo del servicio o % general de Ajustes
+  const hasFixedDeposit = Boolean(service.deposit_amount && service.deposit_amount > 0)
+  const deposit = hasFixedDeposit
+    ? Math.min(total, Math.round(Number(service.deposit_amount)))
+    : Math.round((total * depositPercent) / 100)
 
   const phoneDigits = cleanPhone(phone)
+  const isDifferentPhoneFromSaved = Boolean(profile.phone && phoneDigits !== cleanPhone(profile.phone))
+  const showSavedBirthdayBanner = !editBirthday && !isDifferentPhoneFromSaved
+
+  function clearSavedProfile() {
+    window.localStorage.removeItem(PROFILE_KEY)
+    setProfile({})
+    setFirstName("")
+    setLastName("")
+    setPhone("")
+    setDni("")
+    setEmail("")
+    setBirthDateDMY("")
+    setEditBirthday(true)
+    setNotes("")
+    toast.success("Datos limpiados para reservar a nombre de otra persona")
+  }
+
+  function handlePhoneChange(raw: string) {
+    const cleaned = raw.replace(/[^\d\s]/g, "")
+    setPhone(cleaned)
+    const nextDigits = cleanPhone(cleaned)
+    if (profile.phone && nextDigits !== cleanPhone(profile.phone)) {
+      setEditBirthday(true)
+    }
+  }
 
   async function applyCoupon() {
     const code = couponCode.trim().toUpperCase()
@@ -125,7 +155,7 @@ export function StepDetails({
     }
 
     let isoBirth: string | null = null
-    if (editBirthday && birthDateDMY.trim()) {
+    if (!showSavedBirthdayBanner && birthDateDMY.trim()) {
       isoBirth = parseDMYToISO(birthDateDMY)
       if (!isoBirth) {
         toast.error("Ingresá tu cumpleaños en formato DD/MM/AAAA (ej: 23/03/1998)")
@@ -154,13 +184,14 @@ export function StepDetails({
           coupon_code: couponStatus?.code ?? null,
         }),
       })
+      const sameUser = Boolean(profile.phone && phoneDigits === cleanPhone(profile.phone))
       const nextProfile: ClientProfile = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         phone: phoneDigits,
         dni: dni.replace(/\D/g, ""),
         email: email.trim(),
-        has_birth_date: profile.has_birth_date || Boolean(isoBirth),
+        has_birth_date: Boolean(isoBirth) || (sameUser && Boolean(profile.has_birth_date)),
       }
       window.localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile))
 
@@ -210,7 +241,21 @@ export function StepDetails({
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      {profile.phone ? (
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-border bg-neutral-50 px-3.5 py-2.5 text-xs">
+          <span className="text-neutral-600">¿Reservás para otra persona?</span>
+          <button
+            type="button"
+            onClick={clearSavedProfile}
+            className="inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+          >
+            <RotateCcw className="size-3" aria-hidden="true" />
+            Limpiar datos
+          </button>
+        </div>
+      ) : null}
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
         <Field label="Nombre" htmlFor="first_name" required>
           <Input id="first_name" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         </Field>
@@ -228,7 +273,7 @@ export function StepDetails({
             inputMode="numeric"
             autoComplete="tel-national"
             value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+            onChange={(e) => handlePhoneChange(e.target.value)}
             onBlur={() => setPhone(phoneDigits)}
             placeholder="280 455 0000"
             className="h-full flex-1 bg-transparent px-3 text-[15px] text-ink outline-none placeholder:text-neutral-400"
@@ -245,7 +290,7 @@ export function StepDetails({
         </Field>
       </div>
 
-      {editBirthday ? (
+      {!showSavedBirthdayBanner ? (
         <Field label="Fecha de cumpleaños" htmlFor="birth_date" hint="Formato Día/Mes/Año (ej: 23/03/1998) para darte un descuento en tu día" className="mt-4">
           <Input
             id="birth_date"
@@ -324,7 +369,9 @@ export function StepDetails({
         </div>
         {requireDeposit ? (
           <div className="mt-1 flex justify-between rounded-xl border border-copper/30 bg-copper/5 px-3 py-2 text-xs font-medium text-copper">
-            <span>Este servicio requiere seña ({depositPercent}%)</span>
+            <span>
+              {hasFixedDeposit ? "Seña fija del servicio" : `Seña requerida (${depositPercent}%)`}
+            </span>
             <span className="font-bold">{formatPrice(deposit)}</span>
           </div>
         ) : null}

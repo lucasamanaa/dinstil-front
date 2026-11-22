@@ -3,7 +3,7 @@
 import useSWR from "swr"
 import { CalendarX2 } from "lucide-react"
 import { fetcher } from "@/lib/api"
-import { nextDays, normalizeTime } from "@/lib/dates"
+import { nextDays, normalizeTime, timeToBusinessMinutes } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ds/primitives"
 import { StepTitle } from "./state-views"
@@ -20,13 +20,14 @@ function extractSlots(data: unknown): string[] {
     .map((s) => (typeof s === "string" ? s : (s.time ?? s.start_time ?? "")))
     .filter(Boolean)
     .map(normalizeTime)
-  return Array.from(new Set(times)).sort()
+  return Array.from(new Set(times)).sort((a, b) => timeToBusinessMinutes(a) - timeToBusinessMinutes(b))
 }
 
 const GROUPS = [
-  { label: "Mañana", test: (t: string) => t < "14:30" },
+  { label: "Mañana", test: (t: string) => t >= "04:00" && t < "14:30" },
   { label: "Tarde", test: (t: string) => t >= "14:30" && t < "19:30" },
   { label: "Noche", test: (t: string) => t >= "19:30" },
+  { label: "Madrugada", test: (t: string) => t < "04:00" },
 ]
 
 export function StepDateTime({

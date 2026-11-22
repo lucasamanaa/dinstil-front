@@ -44,6 +44,7 @@ export type Service = {
   price: number
   duration_minutes: number
   requires_deposit?: boolean
+  deposit_amount?: number | null
 }
 
 export type Barber = {
@@ -130,10 +131,33 @@ export type CalendarDaySummary = {
 export type CalendarResponse = {
   date?: string
   total_appointments?: number
+  shop_schedule?: {
+    start_time: string
+    end_time: string
+    break_start?: string | null
+    break_end?: string | null
+  }
   barbers?: CalendarBarberColumn[]
   appointments?: CalendarAppointment[]
   people_per_slot?: Record<string, number> | { time: string; count: number }[]
   day_summary?: CalendarDaySummary
+}
+
+export type ReportMovement = {
+  id: number
+  date: string
+  start_time: string
+  end_time: string
+  client_name: string
+  client_phone: string
+  client_dni: string
+  barber_name: string
+  service_name: string
+  status: AppointmentStatus
+  total_price: number
+  discount_applied: number
+  coupon_code: string
+  deposit_amount: number
 }
 
 export type ReportResponse = {
@@ -174,6 +198,7 @@ export type ReportResponse = {
     cash: number
     count: number
   }[]
+  movements?: ReportMovement[]
 }
 
 export type BarberException = {

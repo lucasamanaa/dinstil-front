@@ -3,12 +3,32 @@ const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "
 
 export const WEEKDAYS_MON_FIRST = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
-export const TIME_OPTIONS_24H: string[] = Array.from({ length: 34 }, (_, i) => {
-  const totalMinutes = (7 + Math.floor(i / 2)) * 60 + (i % 2 === 0 ? 0 : 30)
-  const hh = String(Math.floor(totalMinutes / 60)).padStart(2, "0")
-  const mm = String(totalMinutes % 60).padStart(2, "0")
+// Horarios cada 30 min desde 07:00 hasta las 03:00 de la madrugada
+export const TIME_OPTIONS_24H: string[] = Array.from({ length: 41 }, (_, i) => {
+  const totalMinutes = (7 * 60) + i * 30
+  const wrapped = totalMinutes % (24 * 60)
+  const hh = String(Math.floor(wrapped / 60)).padStart(2, "0")
+  const mm = String(wrapped % 60).padStart(2, "0")
   return `${hh}:${mm}`
 })
+
+export function formatTimeOptionLabel(t: string): string {
+  const hh = Number(t.slice(0, 2))
+  return hh < 4 ? `${t} hs (madrugada)` : `${t} hs`
+}
+
+export function timeToBusinessMinutes(t: string): number {
+  const [hh, mm] = t.slice(0, 5).split(":").map(Number)
+  if (isNaN(hh) || isNaN(mm)) return 0
+  return (hh < 4 ? hh + 24 : hh) * 60 + mm
+}
+
+export function minutesToHourLabel(mins: number): string {
+  const wrapped = mins % (24 * 60)
+  const hh = String(Math.floor(wrapped / 60)).padStart(2, "0")
+  const mm = String(wrapped % 60).padStart(2, "0")
+  return `${hh}:${mm}`
+}
 
 export function toISODate(date: Date) {
   const y = date.getFullYear()
