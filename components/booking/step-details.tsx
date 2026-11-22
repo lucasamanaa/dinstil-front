@@ -86,7 +86,6 @@ export function StepDetails({
   const discount = couponStatus ? (price * couponStatus.percent) / 100 : 0
   const total = Math.max(0, Math.round(price - discount))
 
-  // Seña dual: monto fijo del servicio o % general de Ajustes
   const hasFixedDeposit = Boolean(service.deposit_amount && service.deposit_amount > 0)
   const deposit = hasFixedDeposit
     ? Math.min(total, Math.round(Number(service.deposit_amount)))
@@ -255,7 +254,7 @@ export function StepDetails({
         </div>
       ) : null}
 
-      <div className="mt-5 grid grid-cols-2 gap-2.5 [className="mt-5 grid grid-cols-2 gap-2.5 [className="mt-5 grid grid-cols-2 gap-3">*]:min-w-0">*]:min-w-0">
+      <div className="mt-5 grid grid-cols-2 gap-2.5 [&>*]:min-w-0">
         <Field label="Nombre" htmlFor="first_name" required>
           <Input id="first_name" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         </Field>
@@ -281,7 +280,7 @@ export function StepDetails({
         </div>
       </Field>
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5 [className="mt-4 grid grid-cols-2 gap-2.5 [className="mt-4 grid grid-cols-2 gap-3">*]:min-w-0">*]:min-w-0">
+      <div className="mt-4 grid grid-cols-2 gap-2.5 [&>*]:min-w-0">
         <Field label="DNI" htmlFor="dni">
           <Input id="dni" type="text" inputMode="numeric" value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="Sin puntos" />
         </Field>
