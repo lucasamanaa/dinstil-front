@@ -21,7 +21,7 @@ export function BookingHeader({
   const showProgress = step >= 1 && step <= 4
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-20 w-full border-b border-border bg-white/95 backdrop-blur">
       <div className="relative flex h-14 items-center justify-center px-4">
         {showBack ? (
           <button
@@ -51,13 +51,13 @@ export function BookingHeader({
       ) : null}
 
       {showBack && pills.length > 0 ? (
-        <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pb-3">
+        <div className="flex flex-wrap justify-center gap-1.5 px-4 pb-3">
           {pills.map((pill) => (
             <button
               key={pill.step}
               type="button"
               onClick={() => onPillClick(pill.step)}
-              className="shrink-0 rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-ink transition-colors hover:border-ink"
+              className="max-w-full truncate rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-ink transition-colors hover:border-ink"
               aria-label={`Cambiar: ${pill.label}`}
             >
               {pill.label}

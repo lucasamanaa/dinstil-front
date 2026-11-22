@@ -53,10 +53,11 @@ export function StepDateTime({
   const slots = extractSlots(data)
 
   return (
-    <section>
+    <section className="w-full max-w-full overflow-x-hidden touch-pan-y">
       <StepTitle>Elegí el día y la hora</StepTitle>
 
-      <div className="no-scrollbar -mx-5 flex snap-x gap-2 overflow-x-auto px-5 pb-1" role="listbox" aria-label="Día">
+      {/* Grilla fija de 7 columnas x 2 filas: los 14 días visibles sin scroll horizontal */}
+      <div className="grid grid-cols-7 gap-1.5" role="listbox" aria-label="Día">
         {days.map((day) => {
           const active = day.iso === date
           return (
@@ -67,13 +68,17 @@ export function StepDateTime({
               aria-selected={active}
               onClick={() => onDateChange(day.iso)}
               className={cn(
-                "flex w-14 shrink-0 snap-start flex-col items-center gap-0.5 rounded-2xl border py-2.5 transition-colors",
+                "flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border py-2 px-0.5 transition-colors",
                 active ? "border-ink bg-ink text-white" : "border-border bg-white text-ink hover:border-ink",
               )}
             >
-              <span className={cn("text-[11px] font-medium", active ? "text-white/70" : "text-neutral-500")}>{day.short}</span>
-              <span className="text-lg font-semibold leading-none">{day.day}</span>
-              <span className={cn("text-[10px] uppercase", active ? "text-white/60" : "text-neutral-400")}>{day.month}</span>
+              <span className={cn("text-[10px] font-medium leading-none", active ? "text-white/75" : "text-neutral-500")}>
+                {day.short}
+              </span>
+              <span className="text-[15px] font-semibold leading-tight tabular-nums">{day.day}</span>
+              <span className={cn("text-[9px] uppercase leading-none", active ? "text-white/65" : "text-neutral-400")}>
+                {day.month}
+              </span>
             </button>
           )
         })}
@@ -94,7 +99,7 @@ export function StepDateTime({
           <div className="flex flex-col items-center rounded-2xl border border-dashed border-neutral-300 px-6 py-10 text-center">
             <CalendarX2 className="mb-3 size-6 text-neutral-400" aria-hidden="true" />
             <p className="text-sm font-medium text-ink">Sin horarios disponibles</p>
-            <p className="mt-1 text-[13px] text-neutral-500">Probá con otro día del carrusel.</p>
+            <p className="mt-1 text-[13px] text-neutral-500">Probá con otro día de la grilla.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
@@ -114,7 +119,7 @@ export function StepDateTime({
                           onClick={() => onSelectTime(time)}
                           aria-pressed={active}
                           className={cn(
-                            "h-11 rounded-full border text-sm font-medium tabular-nums transition-all active:scale-95",
+                            "h-11 min-w-0 rounded-full border text-sm font-medium tabular-nums transition-all active:scale-95",
                             active ? "border-brand bg-brand text-white" : "border-border bg-white text-ink hover:border-ink",
                           )}
                         >

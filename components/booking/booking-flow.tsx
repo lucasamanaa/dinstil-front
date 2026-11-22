@@ -101,7 +101,7 @@ export function BookingFlow() {
     )
   } else {
     content = (
-      <div key={step} className="px-5 pt-6 pb-10 animate-in fade-in slide-in-from-right-3 duration-200">
+      <div key={step} className="px-5 pt-6 pb-10 animate-in fade-in duration-150 w-full max-w-full overflow-x-hidden">
         {step === 1 ? (
           <StepService
             services={serviceList}
@@ -164,7 +164,7 @@ export function BookingFlow() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-white sm:border-x sm:border-border">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-x-hidden bg-white sm:border-x sm:border-border">
       <BookingHeader
         shopName={shop?.name}
         step={serviceList.length === 0 ? 0 : step}

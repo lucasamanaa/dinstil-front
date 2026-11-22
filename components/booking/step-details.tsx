@@ -209,7 +209,7 @@ export function StepDetails({
   }
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col pb-28">
+    <form onSubmit={submit} noValidate className="flex w-full max-w-full flex-col overflow-x-hidden touch-pan-y pb-28">
       <StepTitle>Completá tus datos para confirmar</StepTitle>
 
       <div className="rounded-2xl border border-border bg-white p-4">
@@ -255,7 +255,7 @@ export function StepDetails({
         </div>
       ) : null}
 
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <div className="mt-5 grid grid-cols-2 gap-2.5 [className="mt-5 grid grid-cols-2 gap-2.5 [className="mt-5 grid grid-cols-2 gap-3">*]:min-w-0">*]:min-w-0">
         <Field label="Nombre" htmlFor="first_name" required>
           <Input id="first_name" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         </Field>
@@ -276,12 +276,12 @@ export function StepDetails({
             onChange={(e) => handlePhoneChange(e.target.value)}
             onBlur={() => setPhone(phoneDigits)}
             placeholder="280 455 0000"
-            className="h-full flex-1 bg-transparent px-3 text-[15px] text-ink outline-none placeholder:text-neutral-400"
+            className="h-full min-w-0 flex-1 bg-transparent px-3 text-[15px] text-ink outline-none placeholder:text-neutral-400"
           />
         </div>
       </Field>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-2.5 [className="mt-4 grid grid-cols-2 gap-2.5 [className="mt-4 grid grid-cols-2 gap-3">*]:min-w-0">*]:min-w-0">
         <Field label="DNI" htmlFor="dni">
           <Input id="dni" type="text" inputMode="numeric" value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="Sin puntos" />
         </Field>
