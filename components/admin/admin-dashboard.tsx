@@ -182,8 +182,7 @@ export function AdminDashboard() {
   )
 
   return (
-    <div className="flex min-h-dvh bg-neutral-50">
-      {/* Sidebar fija en Desktop y Tablet */}
+    <div className="flex min-h-dvh w-full max-w-full overflow-x-hidden bg-neutral-50">
       <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0 md:flex-col md:border-r md:border-border md:bg-white">
         <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
           <BrandLogo name={shop.data?.name} />
@@ -201,7 +200,6 @@ export function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Drawer hamburguesa en Celular */}
       {mobileMenuOpen ? (
         <div className="fixed inset-0 z-50 flex md:hidden">
           <button
@@ -237,14 +235,12 @@ export function AdminDashboard() {
         </div>
       ) : null}
 
-      {/* Contenedor principal */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Header superior solo en Celular */}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-white px-4 md:hidden">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="flex size-10 items-center justify-center rounded-xl border border-border bg-white text-ink hover:bg-neutral-50"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-white text-ink hover:bg-neutral-50"
             aria-label="Abrir menú"
           >
             <Menu className="size-5" />
@@ -257,11 +253,11 @@ export function AdminDashboard() {
           ) : null}
         </header>
 
-        <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+        <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
           {needsSetup ? (
             <div className="mb-5 flex items-start gap-3 rounded-2xl border border-copper/30 bg-copper/5 p-4">
               <Sparkles className="mt-0.5 size-5 shrink-0 text-copper" aria-hidden="true" />
-              <div className="text-sm">
+              <div className="min-w-0 text-sm">
                 <p className="font-semibold text-ink">Paso inicial</p>
                 <p className="mt-0.5 text-neutral-600">
                   Configurá los datos y horarios de tu barbería y agregá tus servicios y barberos.
@@ -290,7 +286,7 @@ export function AdminDashboard() {
           ) : tab === "clientes" ? (
             <ClientsTab />
           ) : tab === "equipo" ? (
-            <div className="grid gap-5 xl:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 [&>*]:min-w-0">
               <ServicesPanel onChanged={() => services.mutate()} />
               <BarbersPanel onChanged={() => barbers.mutate()} />
             </div>

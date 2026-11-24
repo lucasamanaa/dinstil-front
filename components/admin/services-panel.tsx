@@ -96,7 +96,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
   }
 
   const form = (
-    <form onSubmit={save} noValidate className="grid grid-cols-2 gap-3 rounded-xl bg-neutral-50 p-4">
+    <form onSubmit={save} noValidate className="grid grid-cols-2 gap-3 rounded-xl bg-neutral-50 p-3.5 sm:p-4 [&>*]:min-w-0">
       <Field label="Nombre" htmlFor="svc-name" required className="col-span-2">
         <Input id="svc-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
       </Field>
@@ -152,7 +152,7 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
       description="Definí precios, duración y seña fija o porcentual por servicio"
       action={
         editingId === null ? (
-          <Btn size="sm" onClick={() => startEdit()}>
+          <Btn size="sm" onClick={() => startEdit()} className="shrink-0">
             <Plus className="size-4" aria-hidden="true" />
             Nuevo
           </Btn>
@@ -175,29 +175,31 @@ export function ServicesPanel({ onChanged }: { onChanged?: () => void }) {
                 {form}
               </li>
             ) : (
-              <li key={service.id} className="flex items-center gap-3 py-3">
+              <li key={service.id} className="flex min-w-0 items-center justify-between gap-2 py-3 sm:gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-medium text-ink">{service.name}</p>
+                  <p className="truncate text-sm font-medium text-ink">{service.name}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-neutral-500 sm:text-[13px]">
+                    <span>
+                      {service.duration_minutes} min{service.category ? ` · ${service.category}` : ""}
+                    </span>
                     {service.requires_deposit ? (
-                      <span className="rounded-full bg-copper/10 px-2 py-0.5 text-[11px] font-semibold text-copper">
+                      <span className="rounded-full bg-copper/10 px-2 py-0.5 text-[10px] font-semibold text-copper">
                         {service.deposit_amount && service.deposit_amount > 0
                           ? `Seña ${formatPrice(service.deposit_amount)}`
-                          : "Seña % general"}
+                          : "Seña %"}
                       </span>
                     ) : null}
                   </div>
-                  <p className="text-[13px] text-neutral-500">
-                    {service.duration_minutes} min{service.category ? ` · ${service.category}` : ""}
-                  </p>
                 </div>
-                <span className="text-sm font-semibold text-copper">{formatPrice(service.price)}</span>
-                <Btn variant="ghost" size="sm" className="size-9 p-0" onClick={() => startEdit(service)} aria-label={`Editar ${service.name}`}>
-                  <Pencil className="size-4" />
-                </Btn>
-                <Btn variant="ghost" size="sm" className="size-9 p-0 text-destructive" onClick={() => remove(service)} aria-label={`Eliminar ${service.name}`}>
-                  <Trash2 className="size-4" />
-                </Btn>
+                <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+                  <span className="mr-1 text-sm font-semibold tabular-nums text-copper">{formatPrice(service.price)}</span>
+                  <Btn variant="ghost" size="sm" className="size-8 p-0 sm:size-9" onClick={() => startEdit(service)} aria-label={`Editar ${service.name}`}>
+                    <Pencil className="size-4" />
+                  </Btn>
+                  <Btn variant="ghost" size="sm" className="size-8 p-0 text-destructive sm:size-9" onClick={() => remove(service)} aria-label={`Eliminar ${service.name}`}>
+                    <Trash2 className="size-4" />
+                  </Btn>
+                </div>
               </li>
             ),
           )}

@@ -14,17 +14,17 @@ export function Panel({
   className?: string
 }) {
   return (
-    <section className={cn("rounded-2xl border border-border bg-white", className)}>
+    <section className={cn("w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-border bg-white", className)}>
       {title ? (
-        <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
-          <div>
+        <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-5 sm:py-4">
+          <div className="min-w-0 flex-1">
             <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
             {description ? <p className="mt-0.5 text-[13px] text-neutral-500">{description}</p> : null}
           </div>
-          {action}
+          {action ? <div className="shrink-0">{action}</div> : null}
         </header>
       ) : null}
-      <div className="p-5">{children}</div>
+      <div className="min-w-0 p-4 sm:p-5">{children}</div>
     </section>
   )
 }
@@ -76,7 +76,7 @@ export function Toggle({
 }) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-4">
-      <span>
+      <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-ink">{label}</span>
         {description ? <span className="block text-[13px] text-neutral-500">{description}</span> : null}
       </span>
